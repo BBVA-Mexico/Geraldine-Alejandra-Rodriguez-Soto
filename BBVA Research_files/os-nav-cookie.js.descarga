@@ -1,0 +1,35 @@
+var cookie_idioma = {
+
+    name: 'os_lang',
+
+    init: function() {
+        if (window.location.pathname == '/en/' || window.location.pathname == '/') {
+            var cookie_lang = this.getCookieIdioma();
+            var current_lang = ((document.getElementsByTagName("html")[0].getAttribute("lang") == 'es') ? 'es' : 'en');
+            if (cookie_lang != current_lang) {
+                if (cookie_lang == 'es') {
+                    window.location.replace('/' + window.location.search);
+                } else if (cookie_lang == 'en') {
+                    window.location.replace('/' + cookie_lang + '/' + window.location.search);
+                }
+            }
+        }
+    },
+
+    getCookieIdioma: function() {
+        var name = this.name + "=";
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
+    }
+}
+
+cookie_idioma.init();

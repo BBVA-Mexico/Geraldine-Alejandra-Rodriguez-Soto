@@ -1,0 +1,53 @@
+jQuery(window).on('load', function() {
+    // setTimeout(function(){
+        if(typeof digitalData !== "undefined" && typeof digitalView == "function"){
+            // Onboarding
+            if(digitalData.page.pageInfo.level2 == "on boarding"){
+               // var dD = jQuery.extend(true, {}, digitalData);
+                setLevel(2, "registro");
+                setLevel(3, "1 bienvenido");
+                setType("formulario");
+                setName("formulario de registro");
+                setFulfillmentModel("online");
+                setStep("1 bienvenido");
+                setState("inicio");
+                setGlobalApplication("digital activation");
+                setUserState();
+
+                setPageName();
+
+                digitalView("App Page Visit", digitalData);
+				
+                jQuery('[data-step="section_onboard_1"]').removeAttr('disabled');
+                //digitalData = dD;
+                //delete dD;
+            }
+
+            // Onboarding
+            if(digitalData.page.pageInfo.level2 == "bienvenido a bbva research"){
+                var dD = jQuery.extend(true, {}, digitalData);
+                setLevel(2, "registro");
+                setLevel(3, "pagina exitosa");
+                setType("formulario");
+                setName("formulario de registro");
+                setFulfillmentModel("online");
+                setStep("pagina exitosa");
+                setState("finalizado");
+                setGlobalApplication("digital activation");
+                setUserState();
+
+                // ID ticket
+                setOperationNumber(getURLParameter("ticket"));
+
+                setPageName();
+
+                digitalView("App Completed", digitalData);
+                //digitalData = dD;
+                //delete dD;
+            }
+        }
+		else{
+			jQuery('[data-step="section_onboard_1"]').removeAttr('disabled');
+		}
+    // }, 1000);
+});

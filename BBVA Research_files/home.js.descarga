@@ -1,0 +1,16 @@
+"use strict";
+
+/* global HeaderComponent, NewsComponent */
+
+window.coronita = {};
+
+jQuery(document).ready($ => {
+    setTimeout(() => {
+        window.coronita.menuAnimate = new HeaderComponent.MenuAnimate();
+        window.coronita.menuAnimate.createEventListeners();
+        window.abrirArchivosAsociadosCompartirRRSS($);
+        window.abrirBarraCompartirRRSS($);
+        window.abrirModalCompartirRRSS($);
+        window.abrirModalInicioSesion($);
+    }, 1000);
+});

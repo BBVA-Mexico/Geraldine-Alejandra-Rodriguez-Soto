@@ -1,0 +1,907 @@
+/**
+ * FUNCIONES PARA PERSONALIZACION
+ */
+var salesforceHomePosts = [];
+var geolocationHomePosts = [];
+// La inicialización del componente se hace en os-scripts.js
+var salesforceComponent = {
+	
+	idMarketingCloud: '',
+	cookieVisits: 'salesforceVisitsPublication',
+	configurationFileURL: sf_vars_front.configuration_file_url,
+	isoToCountryFile: sf_vars_front.iso_to_country_file,
+	urlRecommendationsForDetail: '',
+	urlRecommendationsForHome: '',
+	config: undefined,
+	user: {
+		'subscriberKey': '', 
+		'preferences': {'interests': '', 'modificationDate': ''}, 
+		'geolocation': '16',
+		'geolocationName': 'Spain',
+		'geolocationSetted': false, 
+		'scenario': 'personalize_by_geolocation',
+		'visits': 0,
+		'leer_mas_tarde': [],
+		'mi_biblioteca': []
+	},
+
+	init: function() {
+		var that = this;
+		this.setMarketingCloudId();
+		this.setUser(function() {
+			that.setPersonalizationScenario(that.user.visits);
+			if (that.idMarketingCloud != '') {
+				that.load();
+			}
+		});
+	},
+
+	load: function() {
+		that = this;
+
+		if (typeof OnetrustActiveGroups != 'undefined'){
+			that.cargarJsMarcketingCloud();
+		
+		}
+		else{
+			setTimeout(function(){ 
+				that.cargarJsMarcketingCloud();
+			}, 200);
+		}
+
+
+	},
+
+	cargarJsMarcketingCloud: function()
+	{
+		if (0 < OnetrustActiveGroups.indexOf("C0003"))
+		{//Si no se ha aceptado la cookie de categoría C0003, no se carga el js de MarketingCloud
+		
+			jQuery.getScript("//" + this.idMarketingCloud + ".collect.igodigital.com/collect.js")
+			.done(function(script, textStatus) {
+				that.trackingForPath(that.getUser().subscriberKey);
+				that.trackingForIndexesTabs();
+			});
+		}
+	},
+	
+	setMarketingCloudId: function() {
+		var pro_urls = [
+		    // PRODUCCION
+		    "www.bbvaresearch.com"
+		    // SANDBOX
+		];
+		var pre_urls = [
+		    // PRODUCCION
+		    // SANDBOX
+		    "jjdx6yeh.openweb.bbva",
+		    "revision-jjdx6yeh.openweb.bbva",
+		    "edicion-jjdx6yeh.openweb.bbva",
+		    "js2xjvrn.openweb.bbva",
+		    "revision-js2xjvrn.openweb.bbva",
+		    "edicion-js2xjvrn.openweb.bbva"
+		];
+		var response = this.config;
+
+		if(typeof response == 'undefined') {
+			response = jQuery.ajax({
+				url: this.configurationFileURL,
+				async: false,
+				cache: false
+			}).responseJSON;
+		}
+		var entorno = 'dev';
+		if (typeof response !== 'undefined') {
+			this.config = response;
+		    if (pro_urls.indexOf(window.location.hostname) >= 0) {
+		        entorno = 'pro';
+		    } else if (pre_urls.indexOf(window.location.hostname) >= 0) {
+		        entorno = 'pre';
+		    } else {
+		        entorno = 'dev';
+		    }
+		    if (entorno == 'pro') {
+		    	this.idMarketingCloud = response.os_salesforceMarketingCloudIDPRO;
+		    } else if (entorno == 'pre') {
+		    	this.idMarketingCloud = response.os_salesforceMarketingCloudIDPRE;
+		    } else {
+		    	this.idMarketingCloud = '';
+		    }
+		} else {
+			this.idMarketingCloud = '';
+		}
+	},
+
+	setURLsForRecommendations: function() {
+	
+		if (typeof OnetrustActiveGroups != 'undefined'){	
+	if (OnetrustActiveGroups.indexOf("C0003") < 0)
+	{//Si no se ha aceptado la cookie de categoría C0003, indexof valdrá -1, no se carga el json de configuración
+		//	ni se hacn las llamadas a Salesforce para las recomentaciones.
+		this.urlRecommendationsForDetail = '';
+		this.urlRecommendationsForHome = '';
+	}
+	else
+	{
+		var pro_urls = [
+		    // PRODUCCION
+		    "www.bbvaresearch.com"
+		    // SANDBOX
+		];
+		var pre_urls = [
+		    // PRODUCCION
+		    // SANDBOX
+		    "jjdx6yeh.openweb.bbva",
+		    "revision-jjdx6yeh.openweb.bbva",
+		    "edicion-jjdx6yeh.openweb.bbva",
+		    "js2xjvrn.openweb.bbva",
+		    "revision-js2xjvrn.openweb.bbva",
+		    "edicion-js2xjvrn.openweb.bbva"
+		];
+		
+		var response = this.config;
+
+		if(typeof response == 'undefined') {
+			response = jQuery.ajax({
+				url: this.configurationFileURL,
+				async: false
+			}).responseJSON;
+		}
+		var entorno = 'dev';
+		
+		if (typeof response !== 'undefined') {
+			this.config = response;
+		    if (pro_urls.indexOf(window.location.hostname) >= 0) {
+		        entorno = 'pro';
+		    } else if (pre_urls.indexOf(window.location.hostname) >= 0) {
+		        entorno = 'pre';
+		    } else {
+		        entorno = 'dev';
+		    }
+		    if (entorno == 'pro') {
+		    	this.urlRecommendationsForDetail = response.os_salesforceURLRecommendationDetailPRO;
+		    	this.urlRecommendationsForHome = response.os_salesforceURLRecommendationHomePRO;
+		    } else if (entorno == 'pre') {
+		    	this.urlRecommendationsForDetail = response.os_salesforceURLRecommendationDetailPRE;
+		    	this.urlRecommendationsForHome = response.os_salesforceURLRecommendationHomePRE;
+		    } else {
+		    	this.urlRecommendationsForDetail = response.os_salesforceURLRecommendationDetailPRE;
+		    	this.urlRecommendationsForHome = response.os_salesforceURLRecommendationHomePRE;
+		    }
+		} else {
+			this.urlRecommendationsForDetail = '';
+			this.urlRecommendationsForHome = '';
+		}
+	}
+}
+	},
+
+	trackItemView: function(subscriberKey, itemType, itemCode) {
+		_etmc.push(["setOrgId", this.idMarketingCloud]);
+		if (subscriberKey != '') {
+			_etmc.push(["setUserInfo", {"email": subscriberKey}]);
+		}
+		switch(itemType) {
+			case "item":
+				_etmc.push(["trackPageView", {"item": itemCode}]);
+				break;
+			case "category":
+				_etmc.push(["trackPageView", {"category": itemCode}]);
+				break;
+			default:
+				_etmc.push(["trackPageView"]);
+				break;
+		}
+	},
+	
+	trackingForPath: function(subscriberKey) {
+		var pathname = window.location.pathname;
+		switch(pathname) {
+			case String(pathname.match(/((\/en)?\/publicaciones\/(.)+\/)/gm)): // detalle publicación
+				idPublicacion = jQuery('#detalle_publicacion').data('id').toString();
+				this.trackItemView(subscriberKey, "item", idPublicacion);
+				break;
+			case String(pathname.match(/((\/en)?\/(geography|topic|document-type|tag)\/(.)+\/)/gm)): // categoría
+				//tax = jQuery('#page_publicaciones').data('tax').toString();
+				idTerm = jQuery('#page_publicaciones').data('id').toString();
+				//this.trackItemView(subscriberKey, tax, idTerm);
+				this.trackItemView(subscriberKey, 'category', idTerm);
+				break;
+			case String(pathname.match(/((\/en)?\/(indicadores|indicators)\/(#datosBanca))/gm)): // datos banca
+				//tax1 = jQuery('#datosBancaContent').data('tax1').toString();
+				idTerm1 = jQuery('#datosBancaContent').data('id1').toString();
+				//this.trackItemView(subscriberKey, tax1, idTerm1);
+				this.trackItemView(subscriberKey, 'category', idTerm1);	
+				//tax2 = jQuery('#datosBancaContent').data('tax1').toString();
+				idTerm2 = jQuery('#datosBancaContent').data('id2').toString();
+				//this.trackItemView(subscriberKey, tax2, idTerm2);
+				this.trackItemView(subscriberKey, 'category', idTerm2);
+				break;
+			case String(pathname.match(/((\/en)?\/(indicadores|indicators)\/(#previsiones)?)/gm)): // datos banca
+				//tax = jQuery('#previsionesContent').data('tax').toString();
+				idTerm = jQuery('#previsionesContent').data('id').toString();
+				//this.trackItemView(subscriberKey, tax, idTerm);	
+				this.trackItemView(subscriberKey, 'category', idTerm);	
+				break;	
+			default:
+				this.trackItemView(subscriberKey, '', '');
+				break;
+		}
+	},
+
+	trackingForIndexesTabs: function() {
+		if (jQuery('#page_indicadores').length > 0) {
+			jQuery('#previsiones').click(function(event) {
+				//tax = jQuery('#previsionesContent').data('tax').toString();
+				idTerm = jQuery('#previsionesContent').data('id').toString();
+				//salesforceComponent.trackItemView(salesforceComponent.getUser().subscriberKey, tax, idTerm);
+				salesforceComponent.trackItemView(salesforceComponent.getUser().subscriberKey, 'category', idTerm);
+			});
+			jQuery("#datosBanca").click(function(event) {
+				//tax1 = jQuery('#datosBancaContent').data('tax1').toString();
+				idTerm1 = jQuery('#datosBancaContent').data('id1').toString();
+				//salesforceComponent.trackItemView(salesforceComponent.getUser().subscriberKey, tax1, idTerm1);
+				salesforceComponent.trackItemView(salesforceComponent.getUser().subscriberKey, 'category', idTerm1);
+				//tax2 = jQuery('#datosBancaContent').data('tax2').toString();
+				idTerm2 = jQuery('#datosBancaContent').data('id2').toString();
+				//salesforceComponent.trackItemView(salesforceComponent.getUser().subscriberKey, tax2, idTerm2);
+				salesforceComponent.trackItemView(salesforceComponent.getUser().subscriberKey, 'category', idTerm2);
+			});
+		}
+	},
+
+	isItemInArray: function(id, arr) {
+	    for (var i = 0; i < arr.length; i++) {
+	        if (arr[i][0] == id) {
+	            return true; // Found it
+	        }
+	    }
+	    return false; // Not found
+	},
+
+	setSubscriberKeyAndPreferences: function(callback) {
+		var subscriberKey = "";
+		var leer_mas_tarde = [];
+		var mi_biblioteca = [];
+		preferences = {"interests": "", "modificationDate": ""};
+		var that = this;
+		if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+	        BbvaComponent.getUserLogged(function(error, user) {
+	        	if (!error && typeof(user) != "undefined") {
+		        	custom = user.get('custom');
+
+		        	leer_mas_tarde = [];
+		        	mi_biblioteca = [];
+
+		        	if(typeof custom["listalectura"] !== 'undefined') {
+			        	if(typeof custom["listalectura"]["leerluego"] !== 'undefined') {
+		            		leer_mas_tarde = custom["listalectura"]["leerluego"];
+			        	}
+			        	
+			        	if(typeof custom["listalectura"]["mibiblioteca"] !== 'undefined') {
+			        		mi_biblioteca = custom["listalectura"]["mibiblioteca"];
+			        	}
+			        }
+
+		        	subscriberKey = '';
+		        	if(typeof custom.salesforceId !== 'undefined') {
+		        		subscriberKey = custom.salesforceId;
+		        	}
+				    that.user.subscriberKey = subscriberKey;
+				    that.user.leer_mas_tarde = leer_mas_tarde;
+				    that.user.mi_biblioteca = mi_biblioteca;
+
+				    that.setURLsForRecommendations();
+					if (jQuery('#detalle_publicacion').length > 0) {
+						var post_id = -1;
+						if (typeof(jQuery('#detalle_publicacion').data("id")) != "undefined") {
+							post_id = parseInt(jQuery('#detalle_publicacion').data("id"));
+						}
+						that.getRecommendationsForDetail(post_id);
+					}
+
+
+					// Preferencias
+			    	geo = custom.geo;
+			    	if(typeof geo == 'undefined')
+			    		geo = [];
+			    	tem = custom.tem;
+			    	if(typeof tem == 'undefined')
+			    		tem = [];
+			    	tax = geo.concat(tem);
+			    	interests = tax.join('|');
+			    	modificationDate = custom.interestsModDate;
+			    	preferences.interests = interests;
+			    	preferences.modificationDate = modificationDate;
+			    	that.user.preferences = preferences;
+				} else {
+					that.setSubscriberKeyAndPreferences();
+				}
+
+				if(typeof callback == 'function') {
+					callback();
+				}
+	        });
+	    } else {
+		    this.user.subscriberKey = subscriberKey;
+		    this.leer_mas_tarde = leer_mas_tarde;
+		    this.mi_biblioteca = mi_biblioteca;
+
+		    that.setURLsForRecommendations();
+	    	if (jQuery('#detalle_publicacion').length > 0) {
+				var post_id = -1;
+				if (typeof(jQuery('#detalle_publicacion').data("id")) != "undefined") {
+					post_id = parseInt(jQuery('#detalle_publicacion').data("id"));
+				}
+				that.getRecommendationsForDetail(post_id);
+			}
+
+			if(typeof callback == 'function') {
+				callback();
+			}
+	    }
+	},
+	
+	setUserGeolocation: function(callback) {
+		var country = '';
+		var response = jQuery.ajax({
+			url: sf_vars_front.dominio_pro + 'bbva-components/utils/info',
+			async: false
+		}).responseJSON;
+		if (typeof response !== 'undefined' && response.code == 200) {
+			country = response.data.country;
+		}
+		this.user.geolocation = this.isoToCountry(country);
+		this.user.geolocationName = terms_names[this.user.geolocation];
+		this.user.geolocationSetted = true;
+
+		if(typeof callback == 'function') {
+			callback();
+		}
+
+	},
+
+	setCookie: function(cname, cvalue, exdays) {
+		var d = new Date();
+		d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+		var expires = "expires="+ d.toUTCString();
+		document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+	},
+
+	getCookie: function(cname) {
+		var name = cname + "=";
+		try {
+			var decodedCookie = decodeURIComponent(document.cookie);
+		} catch (e) {
+			var decodedCookie = document.cookie;
+		}
+		var ca = decodedCookie.split(';');
+		for (var i = 0; i < ca.length; i++) {
+			var c = ca[i];
+			while (c.charAt(0) == ' ') {
+			  c = c.substring(1);
+			}
+			if (c.indexOf(name) == 0) {
+			  return c.substring(name.length, c.length);
+			}
+		}
+		return "";
+	},
+
+	deleteCookie: function(name) {
+	  document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+	},
+
+	setCookieSalesforce: function() {
+	if (typeof OnetrustActiveGroups != 'undefined'){
+		if (0 < OnetrustActiveGroups.indexOf("C0003")){
+			visits = 0;
+			var cookieVisits = this.getCookie(this.cookieVisits);
+			if (cookieVisits != "") {
+				visits = parseInt(cookieVisits);
+			}
+			if (jQuery('#detalle_publicacion').length > 0) {
+				if (cookieVisits == "") {
+					visits = 1;
+				} else {
+					visits = parseInt(cookieVisits) + 1;
+				}
+				this.deleteCookie(this.cookieVisits);
+				this.setCookie(this.cookieVisits, visits, 90);
+			}
+			this.user.visits = visits;
+		}
+	}
+	},
+
+	setPersonalizationScenario: function(visits) {
+		var scenario = 'personalize_by_geolocation';
+		var response = this.config;
+
+		if(typeof response == 'undefined') {
+			response = jQuery.ajax({
+				url: this.configurationFileURL,
+				async: false
+			}).responseJSON;
+		}
+		if (typeof response !== 'undefined') {
+			this.config = response;
+			var settings = response.os_salesforceVisitsForARecurrentUserPublication;
+			var geolocation = settings.geolocation;
+			var preferences = settings.preferences;
+			var affinity = settings.affinity;
+			if(this.user.subscriberKey == '') {
+				if (parseInt(geolocation.min) <= visits && visits < parseInt(geolocation.max)) {
+					scenario = 'personalize_by_geolocation';
+				} else if ( visits >= parseInt(preferences.min)) {
+					scenario = 'personalize_by_affinity';
+				}
+			} else {
+				if(parseInt(geolocation.min) <= visits && visits < parseInt(geolocation.max)) {
+					if(this.user.preferences.interests !== '') {
+						scenario = 'personalize_by_preferences';
+					} else {
+						scenario = 'personalize_by_geolocation';
+					}
+				} else if (parseInt(preferences.min) <= visits && visits <= parseInt(preferences.max)) {
+					if(this.user.preferences.interests !== '') {
+						scenario = 'personalize_by_preferences';
+					} else {
+						scenario = 'personalize_by_affinity';	
+					}
+				} else if (visits >= parseInt(affinity.min)) {
+					scenario = 'personalize_by_affinity';
+				}
+			}
+			this.setURLsForRecommendations();
+		}
+		this.user.scenario = scenario;
+		if(jQuery('#page_home_noLogin').length > 0) {
+			this.personalizeHome(scenario);
+		}
+	},
+
+	setUser: function(callback) {
+    	this.setSubscriberKeyAndPreferences(callback);
+	},
+
+	getUser: function() {
+		return this.user;
+	},
+
+	isoToCountry: function(iso) {
+		var response = jQuery.ajax({
+			url: this.isoToCountryFile,
+			async: false,
+			cache: false
+		}).responseJSON;
+		if (typeof response !== 'undefined') {
+			if(typeof response[iso] !== 'undefined') {
+				country = parseInt(response[iso]);
+			} else {
+				country = parseInt(response['default_geography']);
+			}
+		} else {
+			country = this.user.geolocation;
+		}
+		return country;
+	},
+
+	personalizeHome: function(scenario) {
+		var that = this;
+		if(scenario == 'personalize_by_geolocation') {
+			this.setUserGeolocation(function() {
+				section = jQuery('#section_publicacionesUltimas.geolocation');
+				if(typeof section == 'undefined')
+					return;
+				current_section = section;
+				jQuery(section).find('#orden').val(that.user.geolocation);
+				jQuery(section).find('.geo-country').html(that.user.geolocationName);
+				tipo = jQuery(section).find('#tipo').val(); // Tipo de post a traer (de momento siempre publicacion)
+			    subpath = jQuery(section).find('#subpath').val(); // Carpeta en la que busco la lista
+			    orden_cards = jQuery(section).find('#orden').val(); // order o ID de taxonomía
+			    path = "/wp-content/uploads/json/" + subpath + '/';
+			    ver_mas = jQuery(section).find('#cardVermas a');
+			    jQuery.getJSON(path + orden_cards + ".json", function(data) {
+			    	offset = jQuery(section).find('#offset').val();
+					numPubsIniciales = jQuery(section).find('#inicio').val();
+					numVerMas = jQuery(section).find('#mostrar').val();
+					jQuery(section).find('#inicio').val(0);
+					jQuery(section).find('#offset').val(0);
+					jQuery(section).find('#mostrar').val(numPubsIniciales);
+					geolocationHomePosts = data;
+			    	getIndice(geolocationHomePosts,function() {
+			    		if(jQuery(section).find('[id^=card-]').length > 0) {
+							jQuery(section).fadeIn();
+						}
+			    		// No quieren eliminar publicaciones iniciales repetidas
+			    		//pubs = jQuery(section).find('[id^=card-]').toArray();
+			    		//that.removeRepeatedPubsFromCMSSpace(pubs);
+			    		jQuery(section).siblings('#section_publicacionesUltimas.salesforce').remove();
+			    	});
+
+			    	jQuery(section).find('#inicio').val(numPubsIniciales);
+					jQuery(section).find('#offset').val(offset);
+					jQuery(section).find('#mostrar').val(numVerMas);
+
+				    //jQuery(section).siblings('#section_publicacionesUltimas.cms').find('#mostrar').val(6);
+			    }).error(noHayMasPublicaciones);
+			});
+		} else if(scenario == 'personalize_by_preferences' || scenario == 'personalize_by_affinity') {
+			section = jQuery('#section_publicacionesUltimas.salesforce');
+			if(typeof section == 'undefined')
+				return;
+			current_section = section;
+			tipo = jQuery(section).find('#tipo').val(); // Tipo de post a traer (de momento siempre publicacion)
+		    subpath = jQuery(section).find('#subpath').val(); // Carpeta en la que busco la lista
+		    ver_mas = jQuery(section).find('#cardVermas a');
+		    data = '';
+		    if(scenario == 'personalize_by_preferences' && this.user.preferences.interests !== '') {
+		    	data = {'category': this.user.preferences.interests};
+		    }
+		    if(this.urlRecommendationsForHome !== '') {
+		    	jQuery.ajax({
+					url: this.urlRecommendationsForHome,
+					async: true,
+					dataType: 'jsonp',
+					timeout: 5000,
+					jsonp : 'callback',
+					data: data,
+					success: function(result) {
+						salesforceHomePosts = result[0].items;
+						if (typeof salesforceHomePosts !== 'undefined' && salesforceHomePosts.length > 0) {
+							//salesforceHomePosts.sort(that.sortByDate); //Ya no es necesario ordenar, viene ordenado de Salesforce
+							offset = jQuery(section).find('#offset').val();
+							numPubsIniciales = jQuery(section).find('#inicio').val();
+							numVerMas = jQuery(section).find('#mostrar').val();
+							jQuery(section).find('#inicio').val(0);
+							jQuery(section).find('#offset').val(0);
+							jQuery(section).find('#mostrar').val(numPubsIniciales);
+							getIndice(salesforceHomePosts,function() {
+								if(jQuery(section).find('[id^=card-]').length > 0) {
+									jQuery(section).fadeIn();
+								} else {
+									that.personalizeHome('personalize_by_geolocation');
+								}
+								// No quieren eliminar publicaciones iniciales repetidas
+								//pubs = jQuery(section).find('[id^=card-]').toArray();
+								//that.removeRepeatedPubsFromCMSSpace(pubs);
+								jQuery(section).siblings('#section_publicacionesUltimas.geolocation').remove();
+								//jQuery(section).siblings('#section_publicacionesUltimas.cms').find('[id^=card-]').slice(-2).remove();
+								jQuery(section).siblings('#section_publicacionesUltimas.cms').find('#inicio').val(0);
+								jQuery(section).siblings('#section_publicacionesUltimas.cms').find('#offset').val(5);
+							});
+
+							jQuery(section).find('#inicio').val(numPubsIniciales);
+							jQuery(section).find('#offset').val(offset);
+							jQuery(section).find('#mostrar').val(numVerMas);
+						} else {
+							that.personalizeHome('personalize_by_geolocation');
+						}
+					},
+					error: function(x, t, m) {
+						if(t==="timeout") {
+							that.personalizeHome('personalize_by_geolocation');
+						}
+					}
+				});
+		    } else {
+		    	that.personalizeHome('personalize_by_geolocation');
+		    }
+		}
+	},
+
+	removeRepeatedPubsFromCMSSpace: function(pubs,indicePubs) {
+		var that = this;
+		if(pubs.length > 0) {
+			current_section = jQuery('#section_publicacionesUltimas.cms');
+
+			current_card_id = jQuery(pubs[0]).attr('id');
+			pubs.shift();
+	        current_card = jQuery('#section_publicacionesUltimas.cms').find('#' + current_card_id);
+	        if(typeof current_card !== 'undefined' && current_card.length > 0) {
+	        	current_card.remove();
+
+			    // Reasigno clases de las cards
+			    var cards = jQuery(current_section).find('.partial_cardsGrid > .row').children();
+			    cards.each(function(index, card) {
+			        index_aux = index + 1;
+                                
+                                let position = index_aux % 5;        
+                                var clase_div = (1 === position || 2 === position) ? 'col-md-6 col-xs-12' : 'col-lg-4 col-md-12';
+                                var clase_article = (1 === position || 2 === position) ? 'shortcode_card f_2x1 card_medium' : 'shortcode_card f_1x1 card_medium';
+                                
+			        jQuery(card).attr('class', clase_div);
+			        jQuery(card).children('article').attr('class', clase_article);
+			        jQuery(card).show();
+			    });
+
+			    // Muestro una card más
+		        if(typeof indicePubs !== 'undefined') {
+		        	var offset = parseInt(jQuery(current_section).find("#offset").val());
+			        loop(offset, offset + 1, indicePubs,function() {
+			        	that.removeRepeatedPubsFromCMSSpace(pubs,indicePubs);
+			        });
+		        } else {
+		        	var orden_cards = jQuery(current_section).find('#orden').val(); // order o ID de taxonomía
+		        	var tipo = jQuery(current_section).find('#tipo').val(); // Tipo de post a traer (de momento siempre publicacion)
+			        var subpath = jQuery(current_section).find('#subpath').val(); // Carpeta en la que busco la lista
+			        var path = "/wp-content/uploads/json/" + subpath + '/';
+		        	jQuery.getJSON(path + orden_cards + ".json", function(indice) {
+			        	indicePubs = indice;
+			            var offset = parseInt(jQuery(current_section).find("#offset").val());
+			            loop(offset, offset + 1, indice,function() {
+				        	that.removeRepeatedPubsFromCMSSpace(pubs,indicePubs);
+				        });
+			        });
+		        }
+	        }
+	        if(pubs.length == 0) {
+	        	that.removeRepeatedPubsFromCMSSpace(pubs,indicePubs);
+	        }
+		} else {
+			// Compruebo que las nuevas cards de CMS no están en el espacio de SF o GEO. En caso afirmativo las quito
+			cards = jQuery('#section_publicacionesUltimas.cms').find('.partial_cardsGrid > .row').children();
+			cards.each(function(index, card) {
+				id = jQuery(card).attr('id');
+				nuevaCardEnSF = jQuery('#section_publicacionesUltimas.salesforce').find('#' + id);
+				nuevaCardEnGeo = jQuery('#section_publicacionesUltimas.geolocation').find('#' + id);
+				if (jQuery(nuevaCardEnSF).length > 0 || jQuery(nuevaCardEnGeo).length > 0) {
+					pubs.push(jQuery(card));
+				}
+			});
+
+			if(pubs.length > 0) {
+				that.removeRepeatedPubsFromCMSSpace(pubs,indicePubs);
+			}
+		}
+	},
+
+	sortByDate: function(a, b) {
+		var aReleaseDate = "";
+		if(typeof a.release_date !== 'undefined') {
+			aReleaseDate = a.release_date;
+		}
+		var bReleaseDate = "";
+		if(typeof b.release_date !== 'undefined') {
+			bReleaseDate = b.release_date;
+		}
+		return ((aReleaseDate > bReleaseDate) ? -1 : ((aReleaseDate < bReleaseDate) ? 1 : 0));
+	},
+
+	getRecommendationsForDetail: function(post_id) {
+		jQuery("#section_publicacionesRelacionadas .component_publicacionesRelacionadas .container .partial_cardsGrid > .row").html("");
+		var that = this;
+		if (post_id !== -1 && this.urlRecommendationsForDetail != '') {
+			var dataDetail = {'item': post_id};
+			pubTerms = jQuery('#salesforce-terms').val();
+			if(typeof pubTerms !== 'undefined' && pubTerms != '') {
+				dataDetail.category = pubTerms;
+			}
+			jQuery.ajax({
+				url: this.urlRecommendationsForDetail,
+				async: true,
+				dataType: 'jsonp',
+				timeout: 5000,
+				jsonp : 'callback',
+				data: dataDetail,
+				success: function(result) {
+					publications = result[0].items;
+					if (typeof publications !== 'undefined' && publications.length > 0) {
+						//publications.sort(that.sortByDate); //Ya no es necesario ordenar, viene ordenado de Salesforce
+						that.getIndice(publications);
+					} else {
+						that.getRecommendationsForDetailInError(post_id);
+					}
+				},
+				error: function(x, t, m) {
+					if(t==="timeout") {
+						that.getRecommendationsForDetailInError(post_id);
+					}
+				}
+			});
+		} else {
+			that.getRecommendationsForDetailInError(post_id);
+		}
+	},
+
+	getRecommendationsForDetailInError: function(post_id) {
+		var that = this;
+        var path = "/wp-content/uploads/json/publicacion/";
+        jQuery.getJSON(path + post_id + ".json", function(post) {
+        	geographies = post.geography;
+
+			var index = geographies.indexOf(post_id);
+			if (index > -1) {
+			  geographies.splice(index, 1);
+			}        	
+
+	        var path = "/wp-content/uploads/json/geography/";
+			
+			var indice = jQuery.ajax({
+				url: path + geographies[0] + ".json",
+				async: false
+			}).responseJSON;
+			// Si está, Quito de la lista el ID de la propia de la publicación
+			indexToRemove = jQuery.inArray(parseInt(post_id),indice);
+			if(indexToRemove > -1) {
+				indice.splice(indexToRemove,1);
+			}
+	        that.getIndice(indice);
+        }).error(function() {
+        	jQuery('#section_publicacionesRelacionadas').hide();
+        });
+
+	},
+
+	getIndice: function(indice) {
+		var inicio = 0;
+		var offset = 0;
+		var mostrar = 6;
+		var fin = 0;
+	    if (offset == inicio) {
+	        fin = inicio + mostrar;
+	    } else {
+	        fin = offset + mostrar;
+	    }
+	    this.loop(offset, fin, indice);
+	},
+
+	loop: function(i, fin, indice) {
+		var that = this;
+	    if (i >= indice.length || i >= fin) {
+	    	if(jQuery("#section_publicacionesRelacionadas .row [id^=card-]").length == 0) {
+	    		postId = jQuery('#detalle_publicacion').attr('data-id');
+	    		that.getRecommendationsForDetailInError(postId);
+	    	}
+	        return true;
+	    } else {
+	        var path = "/wp-content/uploads/json/publicacion/";
+	        var post_id = indice[i];
+	        if (jQuery.isPlainObject(indice[i])) {
+	        	post_id = indice[i].content_id;
+	        }
+	        jQuery.getJSON(path + post_id + ".json", function(post) {
+	            var destino = '';
+	            if (that.isItemInArray(post_id, that.user.leer_mas_tarde)) {
+	            	destino = 'leer_mas_tarde';
+	            } else if (that.isItemInArray(post_id, that.user.mi_biblioteca)) {
+	            	destino = 'mi_biblioteca';
+	            }
+	            html = that.getPost(post, destino);
+	            jQuery("#section_publicacionesRelacionadas .component_publicacionesRelacionadas .container .partial_cardsGrid > .row").append(html);
+	            that.loop(i + 1, fin, indice);
+	        }).error(function() {
+	            that.loop(i + 1, fin + 1, indice);
+	        });
+	    }
+	},
+
+	timeConverter: function(UNIX_timestamp, lang) {
+	    var a = new Date(UNIX_timestamp * 1000);
+	    var months = [];
+	    if (lang == 'es') {
+	        months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+	    } else {
+	        months = ['January', 'February', 'March', 'April', 'May', 'Jun', 'July', 'August', 'September', 'October', 'November', 'December'];
+	    }
+	    var year = a.getFullYear();
+	    var month = months[a.getMonth()];
+	    var date = a.getDate();
+	    var hour = a.getHours();
+	    var min = a.getMinutes();
+	    var sec = a.getSeconds();
+	    if (lang == 'es') {
+	    	var time = date + ' ' + month + ' ' + year;
+	    } else {
+	    	var time = month + ' ' + date + ', ' + year;
+	    }
+	    return time;
+	},
+
+	getPost: function(post, destino) {
+	    var ul = '<ul class="lista_toolsOtros"><li id="lista_item_copyEnlace"><a href="javascript:void(0)" class="copy-to-clipboard" data-url="##URL_PUBLICACION##"><i class="icon-nav_link"></i><span class="iconTexto">' + object_name.copiar_enlace + '</span></a></li><li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + sf_vars_front.anadir_mi_leer_mas_tarde + '</span></a></li><li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + sf_vars_front.anadir_mi_biblioteca + '</span></a></li><li id="lista_item_comment"><a href="##URL_COMENTAR##"><i class="icon-commu_communication"></i><span>' + sf_vars_front.comentar + '</span></a></li></ul>';
+
+            if (destino == "leer_mas_tarde") {
+                // Temp fix para traducción de literal
+                if(typeof object_name !== 'undefined' && typeof object_name.eliminar_lista_lectura !== 'undefined') {
+                        elim_literal = object_name.eliminar_lista_lectura;
+                } else {
+                        elim_literal = sf_vars_front.eliminar_mi_leer_mas_tarde;
+                }
+                
+                ul = '<ul class="lista_toolsOtros"><li id="lista_item_copyEnlace"><a href="javascript:void(0)" class="copy-to-clipboard" data-url="##URL_PUBLICACION##"><i class="icon-nav_link"></i><span class="iconTexto">' + object_name.copiar_enlace + '</span></a></li><li id="lista_item_removelist"><a href="javascript:void(0)"><i class="icon-listaLectura_remove"></i><span class="iconTexto">' + elim_literal + '</span></a></li><li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + sf_vars_front.anadir_mi_biblioteca + '</span></a></li><li id="lista_item_comment"><a href="##URL_COMENTAR##"><i class="icon-commu_communication"></i><span>' + sf_vars_front.comentar + '</span></a></li></ul>';
+            } else if (destino == "mi_biblioteca") {
+                    ul = '<ul class="lista_toolsOtros"><li id="lista_item_copyEnlace"><a href="javascript:void(0)" class="copy-to-clipboard" data-url="##URL_PUBLICACION##"><i class="icon-nav_link"></i><span class="iconTexto">' + object_name.copiar_enlace + '</span></a></li><li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + sf_vars_front.anadir_mi_leer_mas_tarde + '</span></a></li><li id="lista_item_removelistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_remove"></i><span class="iconTexto">' + sf_vars_front.eliminar_mi_biblioteca + '</span></a></li><li id="lista_item_comment"><a href="##URL_COMENTAR##"><i class="icon-commu_communication"></i><span>' + sf_vars_front.comentar + '</span></a></li></ul>';
+            }
+            var html = '<div id="card-##ID##" data-fecha="##FECHA_ORDEN##" data-permalink="##URL_PUBLICACION##" class="col-md-4 col-xs-12 card-js" style="display:block;"><article class="shortcode_card f_1x1 card_small"><div class="shortcode_card_container"><div class="shortcode_card_container_hidden"><div class="cardClose"><a href="javascript:void(0);"><i class="icon-nav_close"></i></a></div><a href="##URL_PUBLICACION##" class="card_link"></a><div class="card_groupFoto"><figure class="cardFotoBg" style="background-image:url(\'##URL_IMAGEN##\')"></figure><div class="cardFotoMask"></div></div><div class="card_groupTitulo"><a href="##URL_PUBLICACION##"><p class="cardFecha"><i class="icon-bulletRectangle"></i>##FECHA##</p><h2 class="cardTitulo">##TITULO##</h2></a></div><div class="card_groupTexto"><span class="cardTexto">##RESUMEN##</span></div></div><div class="card_groupTools"> ##DOCUMENTOS_ASOCIADOS## <div class="toolsCompartir"><p class="texto_toolsCompartir"><a href="javascript:void(0);" title="##TITLE##" id="abrir_tooltip_compartirRRSS"><i class="icon-commu_share"></i><span class="textoIconoOcultar">' + object_name.compartir_rrss + '</span></a><a href="javascript:void(0);" title="' + object_name.otras_acciones + '" id="abrir_tooltip_otrosTools"><i class="icon-tools_configuration"></i><span class="textoIconoOcultar">' + sf_vars_front.otros_tools + '</span></a></p><div id="tooltip_compartirRRSS" class="tooltip_toolsRRSS" style="display: none;"><div class="tooltip_toolsRRSS_container"><ul class="lista_compartirRRSScolors"><li id="lista_item_facebook"><a href="##URL_SHARE_FACEBOOK##" target="_blank"><i class="icon-rrss_facebook2"></i><span class="iconTexto">Facebook</span></a></li><li id="lista_item_twitter"><a href="##URL_SHARE_TWITTER##" target="_blank"><i class="icon-rrss_twitter2"></i><span class="iconTexto">Twitter</span></a></li><li id="lista_item_linkedin"><a href="##URL_SHARE_LINKEDIN##" target="_blank"><i class="icon-rrss_linkedin2"></i><span class="iconTexto">Linkedin</span></a></li><li id="lista_item_whatsapp"><a href="##URL_SHARE_WHATSAPP##" target="_blank"><i class="icon-rrss_whatsapp2"></i><span class="iconTexto">Whatsapp</span></a></li><li id="lista_item_telegram"><a href="##URL_SHARE_TELEGRAM##" target="_blank"><i class="icon-rrss_telegram2"></i><span class="iconTexto">Telegram</span></a></li></ul></div></div><div id="tooltip_otrosTools" class="tooltip_toolsOtros" style="display: none;"><div class="tooltip_toolsOtros_container">' + ul + '</div></div></div></div></div></div></article></div>##MODALES_DESCARGAS## ##MODALES_MULTIMEDIA##';
+            var lang = '';
+
+	    switch(jQuery('html').attr('lang')) {
+	        case 'es':
+	            lang = 'es';
+	            break;
+	        case 'en':
+	            lang = 'en';
+	            break;
+	        default:
+	            lang = 'en';
+	    }
+	    var url_imagen              = post.image;
+	    var fecha                   = timeConverter(post.date, lang);
+	    var url_publicacion         = post.url[lang];
+	    var titulo                  = post.title[lang];
+	    titulo = (titulo.length > 70) ? titulo.substr(0, 69) + '…' : titulo;
+	    var resumen                 = post.excerpt[lang];
+	    resumen = (resumen.length > 325) ? resumen.substr(0, 324) + '…' : resumen;
+	    var url_share_facebook      = post.share.facebook ? post.share.facebook[lang]: "javascript:void(0)";
+	    var url_share_twitter       = post.share.twitter ? post.share.twitter[lang]: "javascript:void(0)";
+	    var url_share_linkedin      = post.share.linkedin ? post.share.linkedin[lang]: "javascript:void(0)";
+	    var url_share_whatsapp      = post.share.whatsapp ? post.share.whatsapp[lang]: "javascript:void(0)";
+	    var url_share_telegram      = post.share.telegram ? post.share.telegram[lang]: "javascript:void(0)";
+            
+            // Fix para evitar error al compartir en Telegram desde IOS
+            url_share_telegram = sanitizeTelegramURL(url_share_telegram, titulo);
+            
+	    //var url_share_google_plus   = post.share.google_plus[lang];
+	    var url_comentar            = post.url_comentar[lang];
+	    var listado_geografias      = get_terms_li(post.geography, 'geografia');
+	    var listado_tematicas       = get_terms_li(post.topic, 'tematica');
+	    var geografias_popup        = get_terms_popup(post.geography, 'geografia');
+	    var tematicas_popup         = get_terms_popup(post.topic, 'tematica');
+	    var documentos_asociados    = get_documentos_asociados_div(post.id, post.attachments);
+	    var modales_descargas       = get_modales_descargas_div(post.id, titulo, post.url['es'], post.attachments, lang, fecha);
+            var modales_multimedia      = get_modales_multimedia_div(post.id, titulo, post.url['es'], post.attachments, lang, fecha);
+            
+	    html = html.replace('##URL_IMAGEN##', url_imagen);
+	    html = html.replace('##FECHA##', fecha);
+	    html = html.replace(/##URL_PUBLICACION##/g, url_publicacion);
+	    html = html.replace('##TITULO##', titulo);
+	    html = html.replace('##RESUMEN##', resumen);
+            
+	    if ('javascript:void(0)' === url_share_facebook) {
+                html = html.replace('href="##URL_SHARE_FACEBOOK##" target="_blank"', 'href="##URL_SHARE_FACEBOOK##"');
+            }
+            html = html.replace('##URL_SHARE_FACEBOOK##', url_share_facebook);
+
+            if ('javascript:void(0)' === url_share_twitter) {
+                html = html.replace('href="##URL_SHARE_TWITTER##" target="_blank"', 'href="##URL_SHARE_TWITTER##"');
+            }
+            html = html.replace('##URL_SHARE_TWITTER##', url_share_twitter);
+
+            if ('javascript:void(0)' === url_share_linkedin) {
+                html = html.replace('href="##URL_SHARE_LINKEDIN##" target="_blank"', 'href="##URL_SHARE_LINKEDIN##"');
+            }
+            html = html.replace('##URL_SHARE_LINKEDIN##', url_share_linkedin);
+
+            if ('javascript:void(0)' === url_share_whatsapp) {
+                html = html.replace('href="##URL_SHARE_WHATSAPP##" target="_blank"', 'href="##URL_SHARE_WHATSAPP##"');
+            }
+            html = html.replace('##URL_SHARE_WHATSAPP##', url_share_whatsapp);
+
+            if ('javascript:void(0)' === url_share_telegram) {
+                html = html.replace('href="##URL_SHARE_TELEGRAM##" target="_blank"', 'href="##URL_SHARE_TELEGRAM##"');
+            }
+            html = html.replace('##URL_SHARE_TELEGRAM##', url_share_telegram);
+            
+	    //html = html.replace('##URL_SHARE_GOOGLE_PLUS##', url_share_google_plus);
+            
+	    html = html.replace('##URL_COMENTAR##', url_comentar);
+	    html = html.replace('##LISTADO_GEOGRAFIAS##', listado_geografias);
+	    html = html.replace('##LISTADO_TEMATICAS##', listado_tematicas);
+	    html = html.replace('##TEMATICAS_POPUP##', tematicas_popup);
+	    html = html.replace('##GEOGRAFIAS_POPUP##', geografias_popup);
+	    html = html.replace('##DOCUMENTOS_ASOCIADOS##', documentos_asociados);
+	    html = html.replace('##MODALES_DESCARGAS##', modales_descargas);
+            html = html.replace('##MODALES_MULTIMEDIA##', modales_multimedia);
+	    //jQuery('#detalle_publicacion').after(modales_descargas);
+	    var title_compartir = object_name.compartir_en_redes_sociales;
+            html = html.replace('##TITLE##', title_compartir);
+
+	    var date = new Date(post.date * 1000);
+	    html = html.replace('##ID##', post.id);
+	    html = html.replace('##FECHA_ORDEN##', date.toISOString().substr(0, 10));
+	    return html;
+	}
+
+};

@@ -1,0 +1,272 @@
+
+jQuery(document).ready(function() {
+
+	// Cookie para saber si es un usuario recurrente
+	if (typeof OnetrustActiveGroups != 'undefined'){
+		setCookieresearchVisits();
+	
+	}
+	else{
+		setTimeout(function(){ 
+			if (typeof OnetrustActiveGroups != 'undefined'){
+			setCookieresearchVisits();		 
+			}
+			else{
+				setTimeout(function(){ 
+					if (typeof OnetrustActiveGroups != 'undefined'){
+					setCookieresearchVisits();		 
+					}
+				 }, 200);
+
+			}
+		 }, 500);
+	}
+
+	// Comprobar si hay algÃºn usuario logado
+	if (window.location.hostname == 'bbva.researchnew.com' || window.location.hostname == 'nuevobbva.research.com') { // si estoy en local siempre pinto el menÃº sin usuario
+		pintaDestacadoHome();
+	} else {
+		var interval = setInterval(function() {
+		    BbvaComponentIsLoaded = (typeof(BbvaComponent) !== "undefined");
+		    if (BbvaComponentIsLoaded) {
+		    	clearInterval(interval);
+		    	pintaDestacadoHome();
+		    }
+		}, 100);
+	}
+
+	function setCookieresearchVisits(){
+		if (0 < OnetrustActiveGroups.indexOf("C0003")){
+			var cookieVisitas = getCookie("researchVisits");
+			if (cookieVisitas == "") {
+				cookieVisitas = 1;
+			} else {
+				cookieVisitas = parseInt(cookieVisitas) + 1;
+			}
+			setCookie("researchVisits", cookieVisitas, 30);
+		}else{
+			document.cookie = "researchVisits" + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+		}
+	}
+
+	function pintaDestacadoHome() {
+		jQuery.getJSON("/wp-content/uploads/highlighted-configuration.json", function(response) {
+			aplicar_a_todos = response.aplicar_a_todos;
+			nuevo = ((getCookie("researchVisits") == "") || ((parseInt(getCookie("researchVisits")) == 1)));
+			recurrente = (parseInt(response.numero_de_visitas) <= parseInt(getCookie("researchVisits")));
+			user_name = '';
+			if (aplicar_a_todos) {
+				tipo_de_usuario = 'todos';
+				opcion = response[tipo_de_usuario]["opcion"];
+			    pintaDestacadoParaUsuario(opcion, response, tipo_de_usuario, user_name);
+			} else {
+				if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+			        BbvaComponent.getUserLogged(function(err, user) {
+			            if (typeof(user) !== "undefined") {
+			               	tipo_de_usuario = 'logado';
+			            	user_name = user.get('optional_data').surname;
+     						user_name = user_name.replace('&nbsp;',' ');
+			            } else {
+			                if (nuevo) {
+			                	tipo_de_usuario = 'nuevo';
+			                } else if (recurrente) {
+			                	tipo_de_usuario = 'recurrente_con_mas_o_igual_de_n_visitas';
+			                } else {
+			                	tipo_de_usuario = 'recurrente_con_menos_de_n_visitas';
+			                }
+			            }
+			            opcion = response[tipo_de_usuario]["opcion"];
+			            pintaDestacadoParaUsuario(opcion, response, tipo_de_usuario, user_name);
+			        });
+			    } else {
+	                if (nuevo) {
+	                	tipo_de_usuario = 'nuevo';
+	                } else if (recurrente) {
+	                	tipo_de_usuario = 'recurrente_con_mas_o_igual_de_n_visitas';
+	                } else {
+	                	tipo_de_usuario = 'recurrente_con_menos_de_n_visitas';
+	                }
+	               	opcion = response[tipo_de_usuario]["opcion"];
+			        pintaDestacadoParaUsuario(opcion, response, tipo_de_usuario, user_name);
+			    }
+			}	
+		});
+	}
+
+	function pintaDestacadoParaUsuario(opcion, response, tipo_de_usuario, user_name) {
+		jQuery.get('/wp-content/plugins/os-highlighted/templates/' + opcion + '.html', function(html) {
+			switch(opcion) {
+				case "onboarding_registro":
+					pinta_onboarding_registro(html);
+					break;
+				case "onboarding_informativo":
+					pinta_onboarding_informativo(html);
+					break;
+				case "noticia":
+					pinta_noticia_destacada(html, response[tipo_de_usuario][opcion]);
+					break;
+				case "video":
+					pinta_video_destacada(html, response[tipo_de_usuario][opcion]);
+					break;
+				case "imagen":
+					pinta_imagen_destacada(html, response[tipo_de_usuario][opcion]);
+					break;
+				case "bienvenida_usuario":
+					pinta_bienvenida_usuario_destacada(html, user_name);
+					break;
+				default:
+					break;
+			}
+		}, 'text');
+	}
+
+	function setCookie(cname, cvalue, exdays) {
+		var d = new Date();
+		d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+		var expires = "expires="+ d.toUTCString();
+		document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+	}
+
+	function getCookie(cname) {
+		var name = cname + "=";
+		try {
+			var decodedCookie = decodeURIComponent(document.cookie);
+		} catch (e) {
+			var decodedCookie = document.cookie;
+		}
+		var ca = decodedCookie.split(';');
+		for (var i = 0; i < ca.length; i++) {
+			var c = ca[i];
+			while (c.charAt(0) == ' ') {
+			  c = c.substring(1);
+			}
+			if (c.indexOf(name) == 0) {
+			  return c.substring(name.length, c.length);
+			}
+		}
+		return "";
+	}
+
+	function getId(url) {
+	    var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+	    var match = url.match(regExp);
+
+	    if (match && match[2].length == 11) {
+	        return match[2];
+	    } else {
+	        return 'error';
+	    }
+	}
+
+	function pinta_noticia_destacada(html, data) {
+		var lang_noticia_destacada = jQuery('html').attr('lang') == 'es' ? 'es' : 'en';
+		var titulo_noticia_destacada = data.titulo[lang_noticia_destacada];
+		var subtitulo_noticia_destacada = data.subtitulo[lang_noticia_destacada];
+		var imagen_url_noticia_destacada = data.imagen_url;
+		var noticia_destacada = data.noticia;
+		var enlace_noticia_destacada = "";
+		
+		jQuery.getJSON("/wp-content/uploads/json/publicacion/" + noticia_destacada + ".json", function(response) {
+			current_lang = jQuery("html").attr("lang");
+			if (current_lang == 'es') {
+				enlace_noticia_destacada = response.url.es;
+			} else {
+				enlace_noticia_destacada = response.url.en;
+			}
+			html = html.replace('{IMAGEN}', imagen_url_noticia_destacada);
+			html = html.replace('{TITULO}', titulo_noticia_destacada);
+			html = html.replace('{SUBTITULO}', subtitulo_noticia_destacada);
+			html = html.replace('{SABER_MAS}', highlighted_translations.saber_mas);
+			html = html.replace('{ENLACE}', enlace_noticia_destacada);
+			jQuery(html).insertBefore(jQuery('#section_publicacionesUltimas').first());
+		});
+	}
+
+	function pinta_imagen_destacada(html, data) {
+		lang = jQuery('html').attr('lang') == 'es' ? 'es' : 'en';
+		titulo = data.titulo[lang];
+		subtitulo = data.subtitulo[lang];
+		imagen_url = data.imagen_url;
+		enlace = data.enlace[lang];
+		html = html.replace('{IMAGEN}', imagen_url);
+		html = html.replace('{TITULO}', titulo);
+		html = html.replace('{SUBTITULO}', subtitulo);
+		html = html.replace('{QUIERES_SABER_MAS}', highlighted_translations.quieres_saber_mas);
+		if (enlace != "") {
+			html = html.replace('{ENLACE}', enlace);
+		} else {
+			html = html.replace('{ENLACE}', "javascript:void(0);");
+		}
+		jQuery(html).insertBefore(jQuery('#section_publicacionesUltimas').first());
+		if (enlace == "") {
+			jQuery('.carousel_videos .carousel_1_Item .carousel-item').css({"cursor":"initial"});
+		}
+	}
+
+	function pinta_video_destacada(html, data) {
+		lang = jQuery('html').attr('lang') == 'es' ? 'es' : 'en';
+		titulo = data.titulo[lang];
+		subtitulo = data.subtitulo[lang];
+		imagen_url = data.imagen_url;
+		enlace = data.enlace[lang];
+		html = html.replace('{IMAGEN}', imagen_url);
+		html = html.replace('{TITULO}', titulo);
+		html = html.replace('{SUBTITULO}', subtitulo);
+		html = html.replace('{QUIERES_SABER_MAS}', highlighted_translations.quieres_saber_mas);
+		html = html.replace('{ENLACE}', enlace);
+		html = html.replace(/{VIDEO_ID}/g, getId(enlace));
+		jQuery(html).insertBefore(jQuery('#section_publicacionesUltimas').first());
+	}
+
+	function pinta_onboarding_registro(html) {
+		titulo_onboarding = highlighted_translations.titulo_onboarding;
+		url_onboarding = highlighted_translations.url_onboarding;
+		boton_onboarding = highlighted_translations.boton_onboarding;
+		texto_icono1_onboarding = highlighted_translations.texto_icono1_onboarding;
+		texto_icono2_onboarding = highlighted_translations.texto_icono2_onboarding;
+		texto_icono3_onboarding = highlighted_translations.texto_icono3_onboarding;
+		html = html.replace('{TITULO_ONBOARDING}', titulo_onboarding);
+		html = html.replace('{URL_ONBOARDING}', url_onboarding);
+		html = html.replace('{BOTON_ONBOARDING}', boton_onboarding);
+		html = html.replace('{TEXTO_ICONO1_ONBOARDING}', texto_icono1_onboarding);
+		html = html.replace('{TEXTO_ICONO2_ONBOARDING}', texto_icono2_onboarding);
+		html = html.replace('{TEXTO_ICONO3_ONBOARDING}', texto_icono3_onboarding);
+		jQuery(html).insertBefore(jQuery('#section_publicacionesUltimas').first());
+	}
+
+	function pinta_onboarding_informativo(html) {
+		descubre = highlighted_translations.descubre; 
+		descubrelo = highlighted_translations.descubrelo;
+		anyade_a_tu_lista_de_lectura = highlighted_translations.anyade_a_tu_lista_de_lectura;
+		lista_de_lectura = highlighted_translations.lista_de_lectura;
+		anyade_publicaciones_a_tu_lista_de_lectura = highlighted_translations.anyade_publicaciones_a_tu_lista_de_lectura;
+		siguiente = highlighted_translations.siguiente;
+		accede_a_tu_lista = highlighted_translations.accede_a_tu_lista;
+		desde_la_cabecera = highlighted_translations.desde_la_cabecera;
+		anterior = highlighted_translations.anterior;
+		te_avisamos = highlighted_translations.te_avisamos;
+		configura_avisos = highlighted_translations.configura_avisos;
+		html = html.replace('{DESCUBRE}', descubre);
+		html = html.replace('{DESCUBRELO}', descubrelo);
+		html = html.replace('{ANYADE_A_TU_LISTA_DE_LECTURA}', anyade_a_tu_lista_de_lectura);
+		html = html.replace('{LISTA_DE_LECTURA}', lista_de_lectura);
+		html = html.replace('{ANYADE_PUBLICACIONES_A_TU_LISTA_DE_LECTURA}', anyade_publicaciones_a_tu_lista_de_lectura);
+		html = html.replace(/{SIGUIENTE}/g, siguiente);
+		html = html.replace('{ACCEDE_A_TU_LISTA}', accede_a_tu_lista);
+		html = html.replace('{DESDE_LA_CABECERA}', desde_la_cabecera);
+		html = html.replace(/{ANTERIOR}/g, anterior);
+		html = html.replace('{TE_AVISAMOS}', te_avisamos);
+		html = html.replace('{CONFIGURA_AVISOS}', configura_avisos);
+		jQuery(html).insertBefore(jQuery('#section_publicacionesUltimas').first());
+	}
+
+	function pinta_bienvenida_usuario_destacada(html, nombre_usuario) {
+		bienvenida = highlighted_translations.bienvenida;
+		texto_usuario = highlighted_translations.texto_usuario;
+		html = html.replace('{BIENVENIDA}', bienvenida);
+		html = html.replace('{NOMBRE_USUARIO}', nombre_usuario);
+		html = html.replace('{TEXTO_USUARIO}', texto_usuario);
+		jQuery(html).insertBefore(jQuery('#section_publicacionesUltimas').first());
+	}
+
+});

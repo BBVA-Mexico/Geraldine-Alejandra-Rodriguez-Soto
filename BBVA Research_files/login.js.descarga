@@ -1,0 +1,568 @@
+/*
+ * --------------------------------------------------------------
+ * |	FUNCIONES PARA LA GESTIÓN DEL LOGIN DE LOS USUARIOS		|
+ * --------------------------------------------------------------
+ */
+
+var timeoutId = '';
+var hostname = window.location.hostname;
+var host = '';
+var projectId = '';
+var hostsPro = ['www.bbvaresearch.com','jjdx6yeh.openweb.bbva','revision-jjdx6yeh.openweb.bbva','edicion-jjdx6yeh.openweb.bbva'];
+var hostsSB = ['js2xjvrn.openweb.bbva','revision-js2xjvrn.openweb.bbva','edicion-js2xjvrn.openweb.bbva'];
+index = hostsPro.indexOf(hostname);
+if(index > -1) {
+    if(!(index >= 0))
+        index = 0;
+
+    host = 'https://' + hostsPro[index];
+    projectId = 'jjdx6yeh';
+} else {
+    index = hostsSB.indexOf(hostname);
+    if(!(index >= 0))
+        index = 0;
+
+    host = 'https://' + hostsSB[index];
+    projectId = 'js2xjvrn';
+}
+
+// Recaptcha
+if (document.getElementById('recaptcha') !== null) {
+	var lang_recaptcha = (jQuery('html').attr('lang') !== 'es') ? 'en' : 'es';
+	var onloadCallback = function() {
+		var recaptcha = grecaptcha.render('recaptcha', {
+	      'sitekey': '6LeRuW4UAAAAAJgHHHEd79tQKGnkXXbHX0JHs6JU',
+	      'theme': 'light',
+	      'hl': lang_recaptcha,
+	      'callback': validateRecaptcha
+	    });
+	};
+}
+
+// Validar si el recaptcha no es vacío
+function validateRecaptcha() {
+	var response = grecaptcha.getResponse();
+	isValidRecaptcha = (response.length > 0);
+	if (isValidRecaptcha && jQuery('#datos_personales_email').val() !== '') {
+		jQuery('.configCuenta_perfil_form .boton').removeAttr("disabled");
+		return true;
+	} else {
+		jQuery('.configCuenta_perfil_form .boton').attr("disabled", "disabled");
+		return false;
+	}
+}
+
+jQuery(function() {
+
+	// En qué idioma estamos actualmente
+    var lang = (jQuery('html').attr('lang') !== 'es') ? '/en/' : '/';
+
+    // URLs necesarias para pintar el menú login
+    var url_home        = window.location.protocol + '//' + window.location.hostname + lang;
+    var url_config      = url_home + 'configcuenta/';
+    var url_redirect    = '#';
+    if (pathname == lang + 'login/' || pathname == ((lang == '/') ? '/login-movil/' : '/en/login-mobile/') || pathname == lang + 'reset/') {
+	    var param_redirectUrl = null;
+	    if (typeof url_object.searchParams != "undefined") {
+	        param_redirectUrl = url_object.searchParams.get('redirectUrl');
+	    }
+        if (param_redirectUrl == null) {
+            url_redirect = encodeURIComponent(url_home);
+        } else {
+            url_redirect = encodeURIComponent(url_object.searchParams.get('redirectUrl'));
+        }
+    } else {
+        url_redirect = encodeURIComponent(window.location.protocol + '//' + window.location.hostname + pathname);
+    }
+
+	if(url_object.href.includes("login=true")) {
+    	jQuery('#login.component_login__tabs__link').addClass("current")
+    	jQuery('#registro.component_login__tabs__link.current').removeClass("current")
+	} else {
+		jQuery('#registro.component_login__tabs__link').addClass("current")
+    	jQuery('#login.component_login__tabs__link.current').removeClass("current")
+	}
+
+    var url_login       = url_home + 'login/';
+    var url_onboarding  = url_home + 'onboarding/';
+
+	// Validar si el correo electrónico no es vacío y tiene el formato correcto
+	function validateEmail(email) {
+		if(typeof email != 'undefined' && email !== '') {
+			isValidEmail = (email.length > 0 && /^(([\s]*)([a-zA-Z0-9_\.-]+))@(([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})([\s]*))$/.test(email));
+			if (isValidEmail) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	// Resetear el estado de los campos del formulario
+	function resetInput() {
+		clearTimeout(timeoutId);
+		jQuery('.configCuenta_perfil_form input').parent().removeClass('was-validated');
+		jQuery('.configCuenta_perfil_form input').siblings('.invalid-feedback').html('');
+		jQuery('.configCuenta_perfil_form input').each(function() {
+			jQuery(this).get(0).setCustomValidity('');
+		});
+	}
+
+	function enableResetPassFormSubmit() {
+		resetInput();
+		email =jQuery('#datos_personales_email_reset').val();
+		pass1 = jQuery('#datos_personales_password_first').val();
+		pass2 = jQuery('#datos_personales_password_second').val();
+		if(email !== '' && pass1 !== '' && pass2 !== '') {
+			jQuery('.configCuenta_perfil_form .boton').attr("disabled", false);
+			return true;
+		} else {
+			jQuery('.configCuenta_perfil_form .boton').attr("disabled", true);
+			return false;
+		}
+	}
+
+	function enableLoginFormSubmit() {
+		resetInput();
+		email = jQuery('.component_login #datos_personales_email').val();
+		pass = jQuery('.component_login #datos_personales_password').val();
+		recaptcha = true;
+		if(jQuery('.component_login #recaptcha').length > 0) {
+			recaptcha = grecaptcha.getResponse();
+		}
+		if(email !== '' && pass !== '') {
+			jQuery('.component_login .configCuenta_perfil_form .boton').attr("disabled", false);
+			return true;
+		} else {
+			jQuery('.component_login .configCuenta_perfil_form .boton').attr("disabled", true);
+			return false;
+		}
+	}
+
+	function enableRecoverPassFormSubmit() {
+		resetInput();
+		email = jQuery('.component_reset_pass #datos_personales_email').val();
+		pass = jQuery('.component_reset_pass #datos_personales_password').val();
+		recaptcha = true;
+		if(jQuery('.component_reset_pass #recaptcha').length > 0) {
+			recaptcha = grecaptcha.getResponse();
+		}
+		if(email !== '' && pass !== '' && recaptcha !== '') {
+			jQuery('.component_reset_pass .configCuenta_perfil_form .boton').attr("disabled", false);
+			return true;
+		} else {
+			jQuery('.component_reset_pass .configCuenta_perfil_form .boton').attr("disabled", true);
+			return false;
+		}
+	}
+
+	// Validar campos rellenos para activar el botón del formulario
+	jQuery('.component_login #datos_personales_email-step1, .component_login #datos_personales_password').on('keyup',resetInput);
+	jQuery('.component_reset_pass #datos_personales_email, .component_reset_pass #recaptcha').on('keyup click focusin focusout',enableRecoverPassFormSubmit);
+	jQuery('#datos_personales_email_reset,#datos_personales_password_first,#datos_personales_password_second').on('keyup focusin focusout',enableResetPassFormSubmit);
+
+	// Solo recojo el evento keypress para no hacer click dos veces en iniciar sesión (y llamar dos veces a Armadillo)
+	jQuery('#login-step1, #login-step3').on('keypress', function(e) {
+		var keyCode = e.keyCode || e.which;
+		if (keyCode === 13) { 
+			e.preventDefault();
+			if(jQuery(this).is('#login-step1')) {
+				jQuery('form#login-step1 #btn-login-step1').click();
+			} else {
+				return false;
+			}
+		}
+	});
+
+	// Funcionalidad para el formulario de nueva contraseña
+	jQuery('.component_update_pass .configCuenta_perfil_form').submit(function(event) {
+		event.preventDefault();
+		jQuery('.alert.alertform').remove();
+		jQuery('.configCuenta_perfil_form .boton').attr("disabled", "disabled");
+		var password = jQuery('#datos_personales_password_first').val();
+		var password2 = jQuery('#datos_personales_password_second').val();
+		var success = true;
+		if(password !== password2) {
+			jQuery('#datos_personales_password_first').parent().addClass('was-validated');
+			jQuery('#datos_personales_password_second').parent().addClass('was-validated');
+			jQuery('.configCuenta_perfil_form .boton').attr("disabled", "disabled");
+			jQuery('#datos_personales_password_first').get(0).setCustomValidity(translation_login.password_distintas);
+			jQuery('#datos_personales_password_second').get(0).setCustomValidity(translation_login.password_distintas);
+			jQuery('#datos_personales_password_second').siblings('.invalid-feedback').html('<span class="icon-commu_alert"></span> ' + translation_login.password_distintas);
+			success = false;
+		}
+		if (success) {
+
+			var ticket = url_object.searchParams.get('ticket');
+			jQuery.ajax({
+				url: window.location.protocol + '//' + window.location.hostname + '/bbva-components/authbbva/reset?&project=' + projectId,
+				method: 'POST',
+				type: 'POST',
+				dataType: 'json',
+		        contentType: 'application/json',
+				data: JSON.stringify({
+					"password": btoa(password),
+					"ticket": ticket,
+				}),
+				success: function(response) {
+
+					if(response.code == 200 || response.code == 202) {
+
+						// Activamos en Salesforce si está el parámetro "activate"
+						var url = new URL(window.location.href);
+						var sf = url.searchParams.get("sf");
+						var activate = url.searchParams.get("activate");
+						if (sf != null && sf != '' && activate != null && activate == '1') {
+							grecaptcha.ready(function() {
+								grecaptcha.execute('6LeZOPYZAAAAAPMTmMzzuNZDQU10r-7FuYeuHyVv', {action: 'submit'})                    
+									.then(function(token) {
+							payload = {
+						        "values": {
+						            "Status":"Activo"
+						        }
+						    };
+						    var salesforce = '/bbva-components/v3/salesforce/' + translation_login.subsURL + 'key:' + translation_login.subsDE + '/rows/SubscriberKey:' + sf;
+						    var url = host + salesforce + '?project=' + projectId + '&clientResponse=' + token;
+						    jQuery.ajax({
+						        url: url,
+						        method: 'PUT',
+						        contentType: 'application/json',
+						        dataType: "json",
+						        data: JSON.stringify(payload),
+						        success: function(response) {
+						            if(typeof response !== 'undefined' && response.code == '200') {
+						            	console.log(response);
+						            } else {
+						                console.log(response);
+						            }
+						        },
+						        error: function(jqXHR,textStatus,errorThrown) {
+						            console.log(jqXHR);
+						            console.log(textStatus);
+						            console.log(errorThrown);
+						            console.log("error");
+						        }
+						    });
+							}); 
+							});// fin grecaptcha.ready(function()
+
+						}
+
+						jQuery('.component_update_pass .section_title').before(getMessage(translation_login.password_ok, false));
+						jQuery('html, body').animate({ scrollTop: 0 });
+						jQuery('.alert.alertform').fadeIn(500);
+						jQuery('.configCuenta_perfil_form').trigger('reset');
+						jQuery('.pass-wrapper').hide();
+
+					} else if(response.code == 400) {
+						jQuery('.component_update_pass .section_title').before(getMessage(translation_login.reset_pass_error,true));
+						jQuery('html, body').animate({ scrollTop: 0 });
+						jQuery('.alert.alertform').fadeIn(500/*,function(){
+		                    timeoutId = setTimeout(function(){
+		                        jQuery('.alert.alertform').fadeOut(5000,function(){
+		                            jQuery('.alert.alertform').remove();
+		                        });
+		                    },10000);
+		                }*/);
+					} else {
+						jQuery('.component_update_pass .section_title').before(getMessage(translation_login.reset_ticket_error,true));
+						jQuery('html, body').animate({ scrollTop: 0 });
+						jQuery('.alert.alertform').fadeIn(500/*,function(){
+		                    timeoutId = setTimeout(function(){
+		                        jQuery('.alert.alertform').fadeOut(5000,function(){
+		                            jQuery('.alert.alertform').remove();
+		                        });
+		                    },10000);
+		                }*/);
+					}
+
+					console.log(response);
+				},
+				error: function(error) {
+					if(error.status == 400) {
+						jQuery('.component_update_pass .section_title').before(getMessage(translation_login.reset_pass_error,true));
+					} else if(error.status == 404) {
+						jQuery('.component_update_pass .section_title').before(getMessage(translation_login.reset_ticket_error,true));
+					} else {
+						jQuery('.component_update_pass .section_title').before(getMessage(translation_login.reset_comunicacion_error,true));
+					}
+					console.log(error);
+
+					jQuery('html, body').animate({ scrollTop: 0 });
+					jQuery('.alert.alertform').fadeIn(500/*,function(){
+	                    timeoutId = setTimeout(function(){
+	                        jQuery('.alert.alertform').fadeOut(5000,function(){
+	                            jQuery('.alert.alertform').remove();
+	                        });
+	                    },10000);
+	                }*/);
+				}
+			});
+		}
+	});
+
+	// Funcionalidad para el formulario de login OLD
+	/*jQuery('.component_do_login .configCuenta_perfil_form').submit(function(event) {
+		event.preventDefault();
+		jQuery('.configCuenta_perfil_form .boton').attr("disabled", true);
+		var email = jQuery('#datos_personales_email').val();
+		var password = jQuery('#datos_personales_password').val();
+		if (validateEmail(email) && password.length > 0) {
+			jQuery.ajax({
+				url: window.location.protocol + '//' + window.location.hostname + '/auth/users/access?remember_me=true',
+	        	method: 'POST',
+	        	type: 'POST',
+				dataType: 'json',
+		        contentType: 'application/json',
+		        headers: {
+		            'authorization': 'Basic ' + window.btoa(email + ':' + password)
+		        },
+		        success: function(response) {
+					if(typeof digitalData !== 'undefined' && typeof tms_track == "function") {
+						tms_track("login", digitalData);
+					}
+					setCookie('bbva_rememberme','true',65); // Duración mayor que vnd.bbva.ref-cookie
+					window.location.href = decodeURIComponent(url_redirect);
+		        },
+		        error: function(error) {
+					if(error.status == "428" || password == "prueba428"){
+						// Usuario sin contraseña
+						jQuery("#datos_personales_email_modal").val(jQuery("#datos_personales_email").val());
+						jQuery('#login-sin-contrasena').modal();
+						// jQuery('.msje_OK').parent().parent().show();
+					} else {
+						jQuery('#datos_personales_email').parent().addClass('was-validated');
+						jQuery('#datos_personales_password').parent().addClass('was-validated');
+						jQuery('#datos_personales_email').get(0).setCustomValidity(translation_login.credenciales_incorrectas);
+						jQuery('#datos_personales_password').get(0).setCustomValidity(translation_login.credenciales_incorrectas);
+						jQuery('#datos_personales_password').siblings('.invalid-feedback').html('<span class="icon-commu_alert"></span> ' + translation_login.credenciales_incorrectas);
+					}
+		        },
+		        complete: function() {
+		        	jQuery('.configCuenta_perfil_form .boton').attr("disabled", false);
+		        }
+			});
+		}
+	});*/
+
+	// Funcionalidad step 1 formulario de login
+	jQuery('form#login-step1 #btn-login-step1').on('click',function(event) {
+		resetInput();
+		jQuery('#login-email').html();
+		jQuery('form#login-step1 #btn-login-step1').attr("disabled",true);
+		var email = jQuery('#datos_personales_email-step1').val();
+		if (validateEmail(email)) {
+			jQuery.ajax({
+				url: window.location.protocol + '//' + window.location.hostname + '/auth/users/access',
+	        	method: 'POST',
+	        	type: 'POST',
+				dataType: 'json',
+		        contentType: 'application/json',
+		        headers: {
+		            'authorization': 'Basic ' + window.btoa(email + ':' + Date.now())
+		        },
+		        success: function(response) {
+					if(typeof digitalData !== 'undefined' && typeof digitalLink == "function") {
+						digitalLink("Login", digitalData);
+					}
+					setCookie('bbva_rememberme','true',65); // Duración mayor que vnd.bbva.ref-cookie
+					window.location.href = decodeURIComponent(url_redirect);
+		        },
+		        error: function(error) {
+		        	if(error.status == "428" || email == "prueba428@prueba.com"){
+						// Usuario sin contraseña
+						jQuery('#datos_personales_email').val(email);
+						validateLoginAccess(false);
+					} else if(error.status == "404") {
+		        		jQuery('#datos_personales_email-step1').parent().addClass('was-validated');
+						jQuery('#datos_personales_email-step1').get(0).setCustomValidity(translation_login.comm_error);
+						jQuery('#datos_personales_email-step1').siblings('.invalid-feedback').html('<span class="icon-commu_alert"></span> ' + translation_login.comm_error);
+						jQuery('form#login-step1 #btn-login-step1').attr("disabled", false);
+		        	} else {
+						jQuery('#login-email').html(email);
+						jQuery('#datos_personales_password').val();
+						validateLoginAccess(true);
+						
+						var dD = jQuery.extend(true, {}, digitalData);
+						setLevel(3, "introducir contrasena");
+						setUserState();
+						
+						setPageName();
+						
+						//digitalView("App Page Visit", digitalData);
+						digitalView("Page View", digitalData);
+						digitalData = dD;
+						delete dD;
+					}
+		        },
+		        complete: function() {
+		        	jQuery('form#login-step1 #btn-login-step1').attr("disabled", false);
+		        }
+			});
+		} else {
+			jQuery('#datos_personales_email-step1').parent().addClass('was-validated');
+			jQuery('#datos_personales_email-step1').get(0).setCustomValidity(translation_login.email_invalido);
+			jQuery('#datos_personales_email-step1').siblings('.invalid-feedback').html('<span class="icon-commu_alert"></span> ' + translation_login.email_invalido);
+			jQuery('form#login-step1 #btn-login-step1').attr("disabled", false);
+		}
+	});
+
+	// Funcionalidad step 2 formulario de login
+	setTimeout(() => {
+		jQuery('.component_do_login #login-step2').submit(function(event) {
+			event.preventDefault();
+			resetInput();
+			jQuery('form#login-step2 [id="btn-login-step2"]').attr("disabled", true);
+			var email = jQuery('[id="datos_personales_email-step1"]').last().val();
+			var password = jQuery('[id="datos_personales_password"]').last().val();
+			if (validateEmail(email) && password.length > 0) {
+				jQuery.ajax({
+					url: window.location.protocol + '//' + window.location.hostname + '/auth/users/access?remember_me=true',
+					method: 'POST',
+					type: 'POST',
+					dataType: 'json',
+					contentType: 'application/json',
+					headers: {
+						'authorization': 'Basic ' + window.btoa(email + ':' + password)
+					},
+					success: function(response) {
+						if(typeof digitalData !== 'undefined' && typeof digitalLink == "function") {
+							digitalLink("Login", digitalData);
+						}
+						setCookie('bbva_rememberme','true',65); // Duración mayor que vnd.bbva.ref-cookie
+						// window.location.href = decodeURIComponent(url_redirect);
+						userLogged();
+						if(isMobile()) {
+							window.location.href = decodeURIComponent(url_redirect);
+						} else {
+							if(url_redirect != encodeURIComponent(url_home)) {
+								window.location.href = decodeURIComponent(url_redirect);
+							} else {
+								jQuery("#modalInicioSesion").modal("hide");
+							}
+						}
+					},
+					error: function(error) {
+						jQuery('[id="errorLogin"]').css("display", "block");
+						if(error.status == "404") {
+							jQuery('[id="errorLogin"]').text(translation_login.comm_error);
+						} else if(error.status == "428" || password == "prueba428"){
+							// Usuario sin contraseña
+							jQuery('[id="errorLogin"]').text(translation_login.user_no_pass);
+						} else {
+							jQuery('[id="errorLogin"]').text(translation_login.credenciales_incorrectas);
+						}
+					},
+					complete: function() {
+						jQuery('form#login-step2 [id="btn-login-step2"]').attr("disabled", false);
+					}
+				});
+			} else {
+				if(password.length == 0) {
+					mess = translation_login.password_invalido;
+				} else {
+					mess = translation_login.email_invalido;
+				}
+				jQuery("#errorLogin").css("display", "block");
+				jQuery("#errorLogin").text(mess);
+				jQuery('form#login-step2 #btn-login-step2').attr("disabled", false);
+			}
+		});
+	}, 1000);
+
+	// Funcionalidad para el formulario de recuperar contraseña (/remember/) y en el paso 3 de la página de login (/login/)
+	jQuery('.component_reset_pass .configCuenta_perfil_form, .component_login #login-step3').submit(function(event) {
+		jQuery('.alertform').remove();
+		jQuery('.configCuenta_perfil_form .boton').attr("disabled", true);
+		var email = jQuery('#datos_personales_email').val();
+		var recaptcha_response = grecaptcha.getResponse();
+		event.preventDefault();
+		if (validateEmail(email) && validateRecaptcha()) {
+			jQuery.ajax({
+				url: window.location.protocol + '//' + window.location.hostname + '/bbva-components/authbbva/remember/?project=' + projectId,
+				method: 'POST',
+				type: 'POST',
+				data: {
+					"email": email,
+					"g-recaptcha-response": recaptcha_response,
+				},
+				success: function(response) {
+					//window.location.href = decodeURIComponent(url_redirect);
+					//console.log("Envío correo");
+					jQuery('.section_title').before(getMessage(translation_login.remember_pass_email_enviado,false));
+					//jQuery('#modal-exito').modal();
+					//jQuery('#login-sin-contrasena').modal('hide');
+				},
+				error: function(error) {
+					console.log(error);
+					jQuery('.section_title').before(getMessage(translation_login.remember_pass_email_error,true));
+				},
+				complete: function() {
+					jQuery('.configCuenta_perfil_form .boton').attr("disabled", true);
+					grecaptcha.reset();
+					jQuery('html, body').animate({ scrollTop: 0 });
+					jQuery('.alert.alertform').fadeIn(500/*,function(){
+	                    timeoutId = setTimeout(function(){
+	                        jQuery('.alert.alertform').fadeOut(5000,function(){
+	                            jQuery('.alert.alertform').remove();
+	                        });
+	                    },10000);
+	                }*/);
+				}
+			});
+		} else {
+			jQuery('.section_title').before(getMessage(translation_login.email_invalido,true));
+			jQuery('.configCuenta_perfil_form .boton').attr("disabled", true);
+			grecaptcha.reset();
+			jQuery('html, body').animate({ scrollTop: 0 });
+			jQuery('.alert.alertform').fadeIn(500);
+		}
+	});
+
+	jQuery(document).ready(function() {
+		const url = new URL(document.URL);
+		const urlParams = new URLSearchParams(url.search);
+
+		if(urlParams.get("code") === "403"){
+			if(isMobile()) {
+				window.location.href = window.location.protocol + '//' + window.location.hostname + ((urlParams.get("lngg") !== 'es') ? '/en/login-mobile' : '/login-movil');
+			} else {
+				if(urlParams.get("redir"))
+					url_redirect = encodeURIComponent(atob(urlParams.get("redir")));
+	
+				setTimeout(() => {
+					let clickInicioSesion = jQuery('html').find('#webpage').find('.header-main').find('#linkInicioSesion');
+					clickInicioSesion.click();
+				}, 1000);
+			}
+		}
+
+		// // Si estamos en la página de login y el autologin ha fallado
+		// if(jQuery('.component_login').length > 0) {
+		// 	autologin = getURLParameter('autologin');
+		// 	if(autologin == 'failed') {
+		// 		jQuery('.component_login .section_title').before(getMessage(translation_login.autologin_error,true));
+		// 		jQuery('.alert.alertform').fadeIn(500/*,function(){
+        //             timeoutId = setTimeout(function(){
+        //                 jQuery('.alert.alertform').fadeOut(5000,function(){
+        //                     jQuery('.alert.alertform').remove();
+        //                 });
+        //             },10000);
+        //         }*/);
+		// 	}
+		// }
+	});
+
+	function getMessage(message,isError) {
+		if(isError) {
+			messageClass = 'alert-danger';
+		} else {
+			messageClass = 'alert-success';
+		}
+
+		message = '<div class="alert ' + messageClass + ' alertform" role="alert" style="display:none;font-size:16px;"><div>' + message + '</div></div>';
+
+		return message;
+	}
+});

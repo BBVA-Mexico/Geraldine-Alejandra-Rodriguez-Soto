@@ -1,0 +1,193 @@
+var hostname = window.location.hostname;
+var host = '';
+var projectId = '';
+var hostsPro = ['www.bbvaresearch.com','jjdx6yeh.openweb.bbva','www.bbvaresearch.com','www.bbvaresearch.com'];
+var hostsSB = ['js2xjvrn.openweb.bbva','revision-js2xjvrn.openweb.bbva','edicion-js2xjvrn.openweb.bbva'];
+index = hostsPro.indexOf(hostname);
+if(index > -1) {
+    if(!(index >= 0))
+        index = 0;
+
+    host = 'https://' + hostsPro[index];
+    projectId = 'jjdx6yeh';
+} else {
+    index = hostsSB.indexOf(hostname);
+    if(!(index >= 0))
+        index = 0;
+
+    host = 'https://' + hostsSB[index];
+    projectId = 'js2xjvrn';
+}
+
+jQuery(function() {
+	
+	//response = {"code":200,"data":[{"thread":"/publicaciones/situacion-geopolitica-mundial-actualizacion-mensual-julio-2018/","visits":6,"title":"33955"},{"thread":"/publicaciones/situacion-espana-tercer-trimestre-2018/","visits":3,"title":"33956"},{"thread":"/publicaciones/sector-publico-productividad-y-nuevas-tecnologias/","visits":2,"title":"33981"},{"thread":"/publicaciones/volvera-a-tener-exito-la-opep/","visits":2,"title":"34013"},{"thread":"/publicaciones/mas-ambicion-para-el-fintech-europeo/","visits":1,"title":"34083"},{"thread":"/publicaciones/publicacion-8/","visits":1,"title":"34169"}]};
+//año, mes, día
+
+	// Fecha desde 
+	lastMonth = new Date();
+	lastMonth.setDate(lastMonth.getDate() - 10);
+	dd = lastMonth.getDate();
+	mm = lastMonth.getMonth()+1;
+	yyyy = lastMonth.getFullYear();
+	if (dd < 10) dd = '0' + dd;
+	if (mm < 10) mm = '0' + mm;
+	dateFrom = yyyy + '-' + mm + '-' + dd;
+
+	// Fecha hasta
+	today = new Date();
+	dd = today.getDate();
+	mm = today.getMonth()+1;
+	yyyy = today.getFullYear();
+	if (dd < 10) dd = '0' + dd;
+	if (mm < 10) mm = '0' + mm;
+	dateTo = yyyy + '-' + mm + '-' + dd;
+
+	var data = [];
+
+	get_most_popular_publications(data, dateFrom, dateTo, 1);
+
+
+});
+
+function timeConverter(UNIX_timestamp, lang) {
+    var a = new Date(UNIX_timestamp * 1000);
+    var months = [];
+    if (lang == 'es') {
+        months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    } else {
+        months = ['January', 'February', 'March', 'April', 'May', 'Jun', 'July', 'August', 'September', 'October', 'November', 'December'];
+    }
+    var year = a.getFullYear();
+    var month = months[a.getMonth()];
+    var date = a.getDate();
+    var hour = a.getHours();
+    var min = a.getMinutes();
+    var sec = a.getSeconds();
+    if (lang == 'es') {
+        var time = date + ' ' + month + ' ' + year;
+    } else {
+        var time = month + ' ' + date + ', ' + year;
+    }
+    return time;
+}
+
+function get_most_popular_publications(data, dateFrom, dateTo, iterator) {
+
+	if (iterator > 2) {
+		jQuery.getJSON("/wp-content/uploads/json/publicacion/order.json", function(response) {
+			end = data.length;
+			jQuery.each(response, function(key, value) {
+				if (data.length == 6) {
+					return false;
+				}
+				if (!checkIfObjectExist(data, value)) {
+					data.push({"title": value});
+				}	
+			});
+			loopMostPopular(0, 6, data)
+		});
+		return true;
+	}
+
+	jQuery.get('/bbva-components/mostpopular/?dateFrom=' + dateFrom + '&dateTo=' + dateTo + '&project=' + projectId, function(response) {
+		if (response.code == 200) {
+			jQuery.each(response.data, function(key, value) {
+				if (!checkIfObjectExist(data, value.title)) {
+					data.push(value);
+				}	
+			});
+			if (data.length > 6) {
+				start = 0;
+				end = Math.min(data.length, 6);
+				loopMostPopular(start, end, data);
+				return true;
+			} else {
+				iterator++;
+				lastMonth = new Date();
+				lastMonth.setDate(lastMonth.getDate() - (iterator * 30));
+				dd = lastMonth.getDate();
+				mm = lastMonth.getMonth()+1;
+				yyyy = lastMonth.getFullYear();
+				if (dd < 10) dd = '0' + dd;
+				if (mm < 10) mm = '0' + mm;
+				dateFrom = yyyy + '-' + mm + '-' + dd;
+				get_most_popular_publications(data, dateFrom, dateTo, iterator);
+			}
+		
+		}
+	}).error(function() {
+        jQuery('#section_lo_mas_leido_fullwidth').remove();
+    });
+}
+
+function checkIfObjectExist(objectArray, title) {
+	for (var i = 0 ;i < objectArray.length; i++) {
+		if (objectArray[i].title === title) {     
+			return true;
+		}
+	}
+	return false; 
+}
+
+
+function loopMostPopular(i, end, data) {
+	if (i == end || jQuery('[data-most-id]').length == 6) {
+		return true;
+	} else {
+		if(typeof data[i] !== 'undefined') {
+			jQuery.getJSON('/wp-content/uploads/json/publicacion/' + data[i].title + '.json', function(publication) {
+				// No repetir
+				if(jQuery('[data-most-id=' + data[i].title + ']').length == 0) {
+					get_most_popular_card(jQuery('[data-most-id]').length + 1, publication);
+				}
+				loopMostPopular(i + 1, end, data);
+			}).error(function(){
+				data.splice(i,1); // Elimino del array data el elemento del que no tengo el JSON
+				loopMostPopular(i, end, data);
+			});
+		} else {
+			// Fecha desde 
+			lastMonth = new Date();
+			lastMonth.setDate(lastMonth.getDate() - 10);
+			dd = lastMonth.getDate();
+			mm = lastMonth.getMonth()+1;
+			yyyy = lastMonth.getFullYear();
+			if (dd < 10) dd = '0' + dd;
+			if (mm < 10) mm = '0' + mm;
+			dateFrom = yyyy + '-' + mm + '-' + dd;
+
+			// Fecha hasta
+			today = new Date();
+			dd = today.getDate();
+			mm = today.getMonth()+1;
+			yyyy = today.getFullYear();
+			if (dd < 10) dd = '0' + dd;
+			if (mm < 10) mm = '0' + mm;
+			dateTo = yyyy + '-' + mm + '-' + dd;
+
+			var data = [];
+
+			get_most_popular_publications(data, dateFrom, dateTo, 3);
+		}
+	}
+}
+
+function get_most_popular_card(numero, publication) {
+	lang = (jQuery("html").attr("lang") == 'es') ? 'es' : "en";
+	visita_nuestra_publicacion = (lang == "es") ? 'Visita nuestra publicación' : 'Visit our publication';
+	titulo = publication.title[lang];
+
+	if (titulo.length > 90) {
+		titulo = titulo.substring(0, 89) + '…';
+	}
+
+	fecha = timeConverter(publication.date, lang);
+	enlace = publication.url[lang];
+	html_card = '<div class="col-md-4 col-xs-12" data-most-id="' + publication.id + '"><article class="shortcode_card "><div class="shortcode_card_sinFoto_container"><div class="shortcode_card_container_hidden"><div class="card_groupNum pb-2"><h2 class="cardNum">{{NUMERO}}</h2><div class="lineBlue"></div></div><div class="card_groupTitulo"><h2 class="cardTitulo">{{TITULO}}</h2></div><div class="card_groupTexto"><p class="cardTexto">{{FECHA}}</p></div><div class="leeMas pt-0"><p class="cardLeerMas"><a href="{{ENLACE}}">' + visita_nuestra_publicacion + '</a></p></div></div></div></article></div>';
+	html_card = html_card.replace('{{NUMERO}}', numero);
+	html_card = html_card.replace('{{TITULO}}', titulo);
+	html_card = html_card.replace('{{FECHA}}', fecha);
+	html_card = html_card.replace('{{ENLACE}}', enlace);
+	jQuery("#section_lo_mas_leido_fullwidth .partial_lo_mas_leido_3Col .row").append(html_card);
+}

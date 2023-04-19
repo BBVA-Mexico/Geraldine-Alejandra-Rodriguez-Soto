@@ -1,0 +1,3467 @@
+var hostname = window.location.hostname;
+var host = '';
+var projectId = '';
+var hostsPro = ['www.bbvaresearch.com', 'jjdx6yeh.openweb.bbva', 'www.bbvaresearch.com', 'www.bbvaresearch.com'];
+var hostsSB = ['js2xjvrn.openweb.bbva', 'revision-js2xjvrn.openweb.bbva', 'edicion-js2xjvrn.openweb.bbva'];
+index = hostsPro.indexOf(hostname);
+if (index > -1) {
+    if (!(index >= 0))
+        index = 0;
+
+    host = 'https://' + hostsPro[index];
+    projectId = 'jjdx6yeh';
+} else {
+    index = hostsSB.indexOf(hostname);
+    if (!(index >= 0))
+        index = 0;
+
+    host = 'https://' + hostsSB[index];
+    projectId = 'js2xjvrn';
+}
+
+var current_url = window.location.href;
+var url_object = new URL(current_url);
+var pathname = url_object.pathname;
+var multimedia_modals = [];
+
+var current_section = '';
+if (typeof authComponentLoaded == 'undefined') {
+    var authComponentLoaded = false;
+}
+
+jQuery.ajaxSetup({
+    cache: false
+});
+
+jQuery(document).ready(function() {
+
+    if (jQuery('main').hasClass('page_404')) {
+        redirect404Page();
+    }
+
+    //if(hostname == hostsSB[0] || hostname == hostsPro[0]) {
+    var cacheado = new Array();
+    var language = jQuery('html').attr('lang');
+    cacheado['headerMenu-' + language + '_timestamp'] = jQuery("header.header-main").data('version');
+    cacheado['footerContent-' + language + '_timestamp'] = jQuery("footer.footer-main").data('version');
+
+    jQuery.ajax({
+        method: 'get',
+        dataType: 'json',
+        url: '/wp-content/themes/bbvaresearch/timestamp.json',
+        success: function(res) {
+            // Header
+            if ((typeof res['headerMenu-' + language + '_timestamp'] !== 'undefined') && (cacheado['headerMenu-' + language + '_timestamp'] < res['headerMenu-' + language + '_timestamp'])) {
+                jQuery.get('/wp-content/themes/bbvaresearch/headerMenu-' + language + '.html?_=' + new Date().getTime(), '', function(html) {
+                    html = html.replace(new RegExp('www.bbvaresearch.com', 'g'), 'www.bbvaresearch.com');
+                    html = html.replace(new RegExp('edicion-', 'g'), '');
+                    html = html.replace(new RegExp('revision-', 'g'), '');
+                    jQuery('#panelNavegacionContent').remove();
+                    jQuery('header.header-main').replaceWith(html);
+                    checkCurrentPageItem();
+                    //checkUserLogged(); // Lo hago en el setInterval
+                    jQuery('#idiomaHeader_es').attr("href", jQuery('link[rel="alternate"][hreflang="es"]').attr('href'));
+                    jQuery('#idiomaHeader_en').attr("href", jQuery('link[rel="alternate"][hreflang="en"]').attr('href'));
+                    jQuery('#idiomaPanelLatera_es').attr("href", jQuery('link[rel="alternate"][hreflang="es"]').attr('href'));
+                    jQuery('#idiomaPanelLatera_en').attr("href", jQuery('link[rel="alternate"][hreflang="en"]').attr('href'));
+                    addURLQueryStrings();
+                    window.coronita.menuAnimate = new HeaderComponent.MenuAnimate();
+                    window.coronita.menuAnimate.createEventListeners();
+                    buscador_cabecera_autocomplete = new Awesomplete('#buscador-cabecera', {
+                        sort: false,
+                        filter: function(text, input) {
+                            text_latinize = latinize(text);
+                            input_latinize = latinize(input);
+                            if (Awesomplete.FILTER_CONTAINS(text_latinize, input_latinize.match(/[^,]*$/)[0])) {
+                                return true;
+                            }
+                            return Awesomplete.FILTER_CONTAINS(text, input.match(/[^,]*$/)[0]);
+                        },
+                        item: function(text, input) {
+                            text_latinize = latinize(text.label).toLowerCase();
+                            input_latinize = latinize(input).toLowerCase();
+                            inicio = text_latinize.indexOf(input_latinize);
+                            if (inicio > -1) {
+                                fin = inicio + input.length;
+                                html = text.substring(0, inicio) + "<mark>" + text.substring(inicio, fin) + "</mark>" + text.substring(fin, text.length);
+                            } else {
+                                html = text;
+                            }
+                            return li_create("li", {
+                                innerHTML: html,
+                                "aria-selected": "false",
+                                "id": "awesomplete_list_" + this.count + "_item_0"
+                            });
+
+                        }
+                    });
+                    gnossAutocomplete('#buscador-cabecera', buscador_cabecera_autocomplete);
+                });
+            } else {
+                addURLQueryStrings();
+            }
+
+            // Footer
+            if ((typeof res['footerContent-' + language + '_timestamp'] !== 'undefined') && (cacheado['footerContent-' + language + '_timestamp'] < res['footerContent-' + language + '_timestamp'])) {
+                jQuery.get('/wp-content/themes/bbvaresearch/footerContent-' + language + '.html?_=' + new Date().getTime(), '', function(html) {
+                    if (jQuery('footer.footer-main').hasClass('bg-grey')) {
+                        // Prefooter gris
+                        html = html.replace('"footer-main"', '"footer-main bg-grey"');
+                    } else {
+                        // Prefooter blanco
+                        html = html.replace('"footer-main bg-grey"', '"footer-main"');
+                    }
+                    html = html.replace(new RegExp('www.bbvaresearch.com', 'g'), 'www.bbvaresearch.com');
+                    html = html.replace(new RegExp('edicion-', 'g'), '');
+                    html = html.replace(new RegExp('revision-', 'g'), '');
+                    jQuery('footer.footer-main').replaceWith(html);
+
+
+
+                });
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            //console.log('error', cb_options.timestamp);
+        }
+    });
+    //}
+
+    jQuery('[id^=card-]').each(function(index) {
+        jQuery(this).find(".lista_toolsOtros").prepend('<li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>')
+        jQuery(this).find(".lista_toolsOtros").prepend('<li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>')
+        
+        let card_permalink = jQuery(this).data('permalink')
+        
+        jQuery(this).find(".lista_toolsOtros").prepend('<li id="lista_item_copyEnlace"><a href="javascript:void(0)" class="copy-to-clipboard" data-url="' + card_permalink + '"><i class="icon-nav_link"></i><span class="iconTexto">' + object_name.copiar_enlace + '</span></a></li>')
+    });
+
+    if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+        BbvaComponent.getUserLogged(function(err, user) { // cargamos al usuario logado en nuestra aplicación
+            if (!err) {
+                custom_json = user.get('custom');
+
+                if (typeof custom_json == 'string')
+                    custom_json = JSON.parse(custom_json);
+
+                if ("undefined" == typeof custom_json["listalectura"]) {
+                    custom_json["listalectura"] = {};
+                    custom_json["listalectura"]["leerluego"] = [];
+                    custom_json["listalectura"]["mibiblioteca"] = [];
+
+                    user.set('custom', custom_json);
+
+                    user.update(function(err) {
+                        //console.log("inicializado lista lectura");
+                    });
+                }
+
+                var leerluego = custom_json["listalectura"]["leerluego"];
+                var mibiblioteca = custom_json["listalectura"]["mibiblioteca"];
+
+                if (jQuery("#detalle_publicacion").length > 0 && jQuery(this).parents("[id^=card-]").find("article").hasClass('card_small') == false) {                    
+                    id = jQuery("#detalle_publicacion").data("id");
+                    
+                    //let card_permalink = jQuery(jQuery(this).parents("[id^=card-]")[0]).data('permalink');
+                    //jQuery('.detalleHeaderMobile_compartirTools').append('<li id="lista_item_copyEnlace"><a title="' + object_name.copiar_enlace + '" href="javascript:void(0)" class="copy-to-clipboard" data-url="' + card_permalink + '"><i class="icon-nav_link"></i><span class="iconTexto">' + object_name.copiar_enlace + '</span></a></li>');
+                    
+                    if (isItemInArray(id, leerluego)) {
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_addlist").remove();
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_addlistBiblioteca").remove();
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_removelist").remove();
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_removelistBiblioteca").remove();
+                        
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_addlist").remove();
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_addlistBiblioteca").remove();
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_removelist").remove();
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_removelistBiblioteca").remove();                        
+
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_copyEnlace").after('<li id="lista_item_removelist"><a href="javascript:void(0)"><i class="icon-listaLectura_remove"></i><span>' + object_name.eliminar_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_comment").before('<li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                        
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_copyEnlace").after('<li id="lista_item_removelist"><a href="javascript:void(0)"><i class="icon-listaLectura_remove"></i><span>' + object_name.eliminar_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_comment").before('<li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                    } else if (isItemInArray(id, mibiblioteca)) {
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_addlist").remove();
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_addlistBiblioteca").remove();
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_removelist").remove();
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_removelistBiblioteca").remove();
+                        
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_addlist").remove();
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_addlistBiblioteca").remove();
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_removelist").remove();
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_removelistBiblioteca").remove();                        
+
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_copyEnlace").after('<li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        jQuery("#section_infoCompartir .lista_compartirTools #lista_item_comment").before('<li id="lista_item_removelistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_remove"></i><span>' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                        
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_copyEnlace").after('<li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        jQuery(".detalleHeaderMobile_compartirTools #lista_item_comment").before('<li id="lista_item_removelistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_remove"></i><span>' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                    }
+                }
+                jQuery('[id^=card-]').each(function(index) {
+                    id = jQuery(this).attr("id").split("-")[1];
+                    if (isItemInArray(id, leerluego)) {
+                        jQuery("#card-" + id + " #lista_item_addlist").remove();
+                        jQuery("#card-" + id + " #lista_item_addlistBiblioteca").remove();
+                        jQuery("#card-" + id + " #lista_item_removelist").remove();
+                        jQuery("#card-" + id + " #lista_item_removelistBiblioteca").remove();
+                        
+                        jQuery("#card-" + id + " #lista_item_copyEnlace").after('<li id="lista_item_removelist"><a href="javascript:void(0)"><i class="icon-listaLectura_remove"></i><span>' + object_name.eliminar_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        jQuery("#card-" + id + " #lista_item_comment").before('<li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                    } else if (isItemInArray(id, mibiblioteca)) {
+                        jQuery("#card-" + id + " #lista_item_addlist").remove();
+                        jQuery("#card-" + id + " #lista_item_addlistBiblioteca").remove();
+                        jQuery("#card-" + id + " #lista_item_removelist").remove();
+                        jQuery("#card-" + id + " #lista_item_removelistBiblioteca").remove();
+                        
+                        jQuery("#card-" + id + " #lista_item_copyEnlace").after('<li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        jQuery("#card-" + id + " #lista_item_comment").before('<li id="lista_item_removelistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_remove"></i><span class="iconTexto">' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                    }
+                });
+            }
+        });
+    }
+
+    /* Página de no resultados */
+    if (jQuery('#page_noresults').length > 0) {
+        search = getURLParameter('search');
+        if (search !== null) {
+            jQuery('.highlight-error span').show();
+            jQuery('.highlight-error .searchText').html(search);
+        } else {
+            jQuery('.highlight-error span').remove();
+        }
+    }
+
+    function checkCurrentPageItem() {
+        var current_path = window.location.href;
+        jQuery(".lista_menuPrincipal .current_page_item a").removeClass("active");
+        jQuery(".lista_menuPrincipal .current_page_item").removeClass("current_page_item");
+        var element_sel = jQuery(".lista_menuPrincipal li a[href='" + current_path + "']");
+        if (element_sel.length > 0) {
+            element_sel.addClass('active');
+            element_sel.parent().addClass('current_page_item');
+        }
+    }
+
+    /** Eventos en el modal de descarga de documentos */
+    jQuery(document).on('mouseenter mouseleave', '.modalDescarga_publicaciones-docs .form_descargaPublicaciones .publicacion_datosArchivos .formGroup_checkbox .formCheckboxLabel i', function(event) {
+        if(event.type == 'mouseenter') {       
+            jQuery(this).siblings('.publicacion_tipoArchivos').addClass("hovered");
+        } else if (event.type === "mouseleave") {
+            jQuery(this).siblings('.publicacion_tipoArchivos').removeClass("hovered");
+        }
+    });
+
+    jQuery(document).on('mouseenter mouseleave', '.modalDescarga_publicaciones-docs .form_descargaPublicaciones .publicacion_datosArchivos .formGroup_checkbox .formCheckboxLabel .publicacion_tipoArchivos', function(event) {
+        if(event.type == 'mouseenter') {       
+            jQuery(this).siblings('i').addClass("hovered");
+        } else if (event.type === "mouseleave") {
+            jQuery(this).siblings('i').removeClass("hovered");
+        }
+    });
+
+    jQuery(document).on('click', '.publicacion_botones .form_botones .boton', function(event) {
+        event.preventDefault();
+        thread = jQuery(this).attr('data-thread-es');
+        idPublicacion = jQuery(this).attr('data-id');
+        var downloadURLS = jQuery(this).parent().parent().parent().find("input:checkbox:checked").map(function() {
+            return jQuery(this).val();
+        }).get();
+        if (downloadURLS.length > 0) {
+            downloadAll(downloadURLS, thread, idPublicacion);
+            // Cierro la modal
+            jQuery(this).siblings('.boton_link').click();
+            jQuery(this).parent().parent().parent().find("input:checkbox:checked").prop('checked', false);
+        }
+    });
+
+    /** Evento de descarga de documentos en el detalle */
+    jQuery(document).on('mouseenter mouseleave', '.partial_bloque_downloadArch .lista_archivos .publicacion_datosArchivos .publicacion_tipoArchivos a', function(event) {
+        if(event.type == 'mouseenter') {       
+            jQuery(this).parent().parent().siblings('i').addClass('hovered');
+        } else if (event.type === "mouseleave") {
+            jQuery(this).parent().parent().siblings('i').removeClass('hovered');
+        }
+	
+    });
+
+    jQuery(document).on('mouseenter mouseleave', '.partial_bloque_downloadArch .lista_archivos li i', function(event) {
+        if(event.type == 'mouseenter') {       
+            jQuery(this).siblings('.publicacion_datosArchivos').find('.publicacion_tipoArchivos a').addClass("hovered");
+        } else if (event.type === "mouseleave") {
+            jQuery(this).siblings('.publicacion_datosArchivos').find('.publicacion_tipoArchivos a').removeClass("hovered");
+        }
+    });
+
+    jQuery(document).on('click', '.partial_bloque_downloadArch .lista_archivos li i', function(event) {
+        jQuery(this).siblings('.publicacion_datosArchivos').find('.publicacion_tipoArchivos a').get(0).click();
+    });
+
+    jQuery(document).on('click', '.partial_bloque_downloadArch .lista_archivos .publicacion_datosArchivos .publicacion_tipoArchivos a', function(event) {
+        thread = jQuery(this).attr('data-thread-es');
+        idPublicacion = jQuery(this).attr('data-id');
+        addVisit(thread, idPublicacion);
+    });
+
+    var idPublicacion = jQuery('#detalle_publicacion').attr('data-id');
+
+    // Estoy en una publicación
+    if (typeof idPublicacion != 'undefined') {
+        likedValue = getCookie('bbvaLikes-' + idPublicacion);
+        if (typeof likedValue != 'undefined') {
+            if (likedValue == "true") {
+                jQuery('#no-me-gusta a').attr('onclick', '');
+                jQuery('#me-gusta a').attr('onclick', '');
+                jQuery('#me-gusta a').attr('style', 'cursor:default;');
+                jQuery('#no-me-gusta a').attr('style', 'cursor:default;');
+                jQuery('head').append('<style>#me-gusta a i:before{color:#004481 !important;}</style>');
+                jQuery('head').append('<style>#no-me-gusta a i:before{color:#666666 !important;}</style>');
+            } else {
+                jQuery('#no-me-gusta a').attr('onclick', '');
+                jQuery('#me-gusta a').attr('onclick', '');
+                jQuery('#no-me-gusta a').attr('style', 'cursor:default;');
+                jQuery('#me-gusta a').attr('style', 'cursor:default;');
+                jQuery('head').append('<style>#no-me-gusta a i:before{color:#004481 !important;}</style>');
+                jQuery('head').append('<style>#me-gusta a i:before{color:#666666 !important;}</style>');
+            }
+        }
+
+        // Si la URL tiene ?comentar=true o ?comentar=false va a la sección de comentarios
+        comentar = getURLParameter('comentar');
+        if (comentar !== null) {
+            goToComment(comentar);
+        }
+    }
+
+    /* Autocompletar cabecera */
+    function latinize(text) {
+        var LATIN_MAP = {
+            "Á": "A",
+            "Ă": "A",
+            "Ắ": "A",
+            "Ặ": "A",
+            "Ằ": "A",
+            "Ẳ": "A",
+            "Ẵ": "A",
+            "Ǎ": "A",
+            "Â": "A",
+            "Ấ": "A",
+            "Ậ": "A",
+            "Ầ": "A",
+            "Ẩ": "A",
+            "Ẫ": "A",
+            "Ä": "A",
+            "Ǟ": "A",
+            "Ȧ": "A",
+            "Ǡ": "A",
+            "Ạ": "A",
+            "Ȁ": "A",
+            "À": "A",
+            "Ả": "A",
+            "Ȃ": "A",
+            "Ā": "A",
+            "Ą": "A",
+            "Å": "A",
+            "Ǻ": "A",
+            "Ḁ": "A",
+            "Ⱥ": "A",
+            "Ã": "A",
+            "Ꜳ": "AA",
+            "Æ": "AE",
+            "Ǽ": "AE",
+            "Ǣ": "AE",
+            "Ꜵ": "AO",
+            "Ꜷ": "AU",
+            "Ꜹ": "AV",
+            "Ꜻ": "AV",
+            "Ꜽ": "AY",
+            "Ḃ": "B",
+            "Ḅ": "B",
+            "Ɓ": "B",
+            "Ḇ": "B",
+            "Ƀ": "B",
+            "Ƃ": "B",
+            "Ć": "C",
+            "Č": "C",
+            "Ç": "C",
+            "Ḉ": "C",
+            "Ĉ": "C",
+            "Ċ": "C",
+            "Ƈ": "C",
+            "Ȼ": "C",
+            "Ď": "D",
+            "Ḑ": "D",
+            "Ḓ": "D",
+            "Ḋ": "D",
+            "Ḍ": "D",
+            "Ɗ": "D",
+            "Ḏ": "D",
+            "ǲ": "D",
+            "ǅ": "D",
+            "Đ": "D",
+            "Ƌ": "D",
+            "Ǳ": "DZ",
+            "Ǆ": "DZ",
+            "É": "E",
+            "Ĕ": "E",
+            "Ě": "E",
+            "Ȩ": "E",
+            "Ḝ": "E",
+            "Ê": "E",
+            "Ế": "E",
+            "Ệ": "E",
+            "Ề": "E",
+            "Ể": "E",
+            "Ễ": "E",
+            "Ḙ": "E",
+            "Ë": "E",
+            "Ė": "E",
+            "Ẹ": "E",
+            "Ȅ": "E",
+            "È": "E",
+            "Ẻ": "E",
+            "Ȇ": "E",
+            "Ē": "E",
+            "Ḗ": "E",
+            "Ḕ": "E",
+            "Ę": "E",
+            "Ɇ": "E",
+            "Ẽ": "E",
+            "Ḛ": "E",
+            "Ꝫ": "ET",
+            "Ḟ": "F",
+            "Ƒ": "F",
+            "Ǵ": "G",
+            "Ğ": "G",
+            "Ǧ": "G",
+            "Ģ": "G",
+            "Ĝ": "G",
+            "Ġ": "G",
+            "Ɠ": "G",
+            "Ḡ": "G",
+            "Ǥ": "G",
+            "Ḫ": "H",
+            "Ȟ": "H",
+            "Ḩ": "H",
+            "Ĥ": "H",
+            "Ⱨ": "H",
+            "Ḧ": "H",
+            "Ḣ": "H",
+            "Ḥ": "H",
+            "Ħ": "H",
+            "Í": "I",
+            "Ĭ": "I",
+            "Ǐ": "I",
+            "Î": "I",
+            "Ï": "I",
+            "Ḯ": "I",
+            "İ": "I",
+            "Ị": "I",
+            "Ȉ": "I",
+            "Ì": "I",
+            "Ỉ": "I",
+            "Ȋ": "I",
+            "Ī": "I",
+            "Į": "I",
+            "Ɨ": "I",
+            "Ĩ": "I",
+            "Ḭ": "I",
+            "Ꝺ": "D",
+            "Ꝼ": "F",
+            "Ᵹ": "G",
+            "Ꞃ": "R",
+            "Ꞅ": "S",
+            "Ꞇ": "T",
+            "Ꝭ": "IS",
+            "Ĵ": "J",
+            "Ɉ": "J",
+            "Ḱ": "K",
+            "Ǩ": "K",
+            "Ķ": "K",
+            "Ⱪ": "K",
+            "Ꝃ": "K",
+            "Ḳ": "K",
+            "Ƙ": "K",
+            "Ḵ": "K",
+            "Ꝁ": "K",
+            "Ꝅ": "K",
+            "Ĺ": "L",
+            "Ƚ": "L",
+            "Ľ": "L",
+            "Ļ": "L",
+            "Ḽ": "L",
+            "Ḷ": "L",
+            "Ḹ": "L",
+            "Ⱡ": "L",
+            "Ꝉ": "L",
+            "Ḻ": "L",
+            "Ŀ": "L",
+            "Ɫ": "L",
+            "ǈ": "L",
+            "Ł": "L",
+            "Ǉ": "LJ",
+            "Ḿ": "M",
+            "Ṁ": "M",
+            "Ṃ": "M",
+            "Ɱ": "M",
+            "Ń": "N",
+            "Ň": "N",
+            "Ņ": "N",
+            "Ṋ": "N",
+            "Ṅ": "N",
+            "Ṇ": "N",
+            "Ǹ": "N",
+            "Ɲ": "N",
+            "Ṉ": "N",
+            "Ƞ": "N",
+            "ǋ": "N",
+            "Ñ": "N",
+            "Ǌ": "NJ",
+            "Ó": "O",
+            "Ŏ": "O",
+            "Ǒ": "O",
+            "Ô": "O",
+            "Ố": "O",
+            "Ộ": "O",
+            "Ồ": "O",
+            "Ổ": "O",
+            "Ỗ": "O",
+            "Ö": "O",
+            "Ȫ": "O",
+            "Ȯ": "O",
+            "Ȱ": "O",
+            "Ọ": "O",
+            "Ő": "O",
+            "Ȍ": "O",
+            "Ò": "O",
+            "Ỏ": "O",
+            "Ơ": "O",
+            "Ớ": "O",
+            "Ợ": "O",
+            "Ờ": "O",
+            "Ở": "O",
+            "Ỡ": "O",
+            "Ȏ": "O",
+            "Ꝋ": "O",
+            "Ꝍ": "O",
+            "Ō": "O",
+            "Ṓ": "O",
+            "Ṑ": "O",
+            "Ɵ": "O",
+            "Ǫ": "O",
+            "Ǭ": "O",
+            "Ø": "O",
+            "Ǿ": "O",
+            "Õ": "O",
+            "Ṍ": "O",
+            "Ṏ": "O",
+            "Ȭ": "O",
+            "Ƣ": "OI",
+            "Ꝏ": "OO",
+            "Ɛ": "E",
+            "Ɔ": "O",
+            "Ȣ": "OU",
+            "Ṕ": "P",
+            "Ṗ": "P",
+            "Ꝓ": "P",
+            "Ƥ": "P",
+            "Ꝕ": "P",
+            "Ᵽ": "P",
+            "Ꝑ": "P",
+            "Ꝙ": "Q",
+            "Ꝗ": "Q",
+            "Ŕ": "R",
+            "Ř": "R",
+            "Ŗ": "R",
+            "Ṙ": "R",
+            "Ṛ": "R",
+            "Ṝ": "R",
+            "Ȑ": "R",
+            "Ȓ": "R",
+            "Ṟ": "R",
+            "Ɍ": "R",
+            "Ɽ": "R",
+            "Ꜿ": "C",
+            "Ǝ": "E",
+            "Ś": "S",
+            "Ṥ": "S",
+            "Š": "S",
+            "Ṧ": "S",
+            "Ş": "S",
+            "Ŝ": "S",
+            "Ș": "S",
+            "Ṡ": "S",
+            "Ṣ": "S",
+            "Ṩ": "S",
+            "Ť": "T",
+            "Ţ": "T",
+            "Ṱ": "T",
+            "Ț": "T",
+            "Ⱦ": "T",
+            "Ṫ": "T",
+            "Ṭ": "T",
+            "Ƭ": "T",
+            "Ṯ": "T",
+            "Ʈ": "T",
+            "Ŧ": "T",
+            "Ɐ": "A",
+            "Ꞁ": "L",
+            "Ɯ": "M",
+            "Ʌ": "V",
+            "Ꜩ": "TZ",
+            "Ú": "U",
+            "Ŭ": "U",
+            "Ǔ": "U",
+            "Û": "U",
+            "Ṷ": "U",
+            "Ü": "U",
+            "Ǘ": "U",
+            "Ǚ": "U",
+            "Ǜ": "U",
+            "Ǖ": "U",
+            "Ṳ": "U",
+            "Ụ": "U",
+            "Ű": "U",
+            "Ȕ": "U",
+            "Ù": "U",
+            "Ủ": "U",
+            "Ư": "U",
+            "Ứ": "U",
+            "Ự": "U",
+            "Ừ": "U",
+            "Ử": "U",
+            "Ữ": "U",
+            "Ȗ": "U",
+            "Ū": "U",
+            "Ṻ": "U",
+            "Ų": "U",
+            "Ů": "U",
+            "Ũ": "U",
+            "Ṹ": "U",
+            "Ṵ": "U",
+            "Ꝟ": "V",
+            "Ṿ": "V",
+            "Ʋ": "V",
+            "Ṽ": "V",
+            "Ꝡ": "VY",
+            "Ẃ": "W",
+            "Ŵ": "W",
+            "Ẅ": "W",
+            "Ẇ": "W",
+            "Ẉ": "W",
+            "Ẁ": "W",
+            "Ⱳ": "W",
+            "Ẍ": "X",
+            "Ẋ": "X",
+            "Ý": "Y",
+            "Ŷ": "Y",
+            "Ÿ": "Y",
+            "Ẏ": "Y",
+            "Ỵ": "Y",
+            "Ỳ": "Y",
+            "Ƴ": "Y",
+            "Ỷ": "Y",
+            "Ỿ": "Y",
+            "Ȳ": "Y",
+            "Ɏ": "Y",
+            "Ỹ": "Y",
+            "Ź": "Z",
+            "Ž": "Z",
+            "Ẑ": "Z",
+            "Ⱬ": "Z",
+            "Ż": "Z",
+            "Ẓ": "Z",
+            "Ȥ": "Z",
+            "Ẕ": "Z",
+            "Ƶ": "Z",
+            "Ĳ": "IJ",
+            "Œ": "OE",
+            "ᴀ": "A",
+            "ᴁ": "AE",
+            "ʙ": "B",
+            "ᴃ": "B",
+            "ᴄ": "C",
+            "ᴅ": "D",
+            "ᴇ": "E",
+            "ꜰ": "F",
+            "ɢ": "G",
+            "ʛ": "G",
+            "ʜ": "H",
+            "ɪ": "I",
+            "ʁ": "R",
+            "ᴊ": "J",
+            "ᴋ": "K",
+            "ʟ": "L",
+            "ᴌ": "L",
+            "ᴍ": "M",
+            "ɴ": "N",
+            "ᴏ": "O",
+            "ɶ": "OE",
+            "ᴐ": "O",
+            "ᴕ": "OU",
+            "ᴘ": "P",
+            "ʀ": "R",
+            "ᴎ": "N",
+            "ᴙ": "R",
+            "ꜱ": "S",
+            "ᴛ": "T",
+            "ⱻ": "E",
+            "ᴚ": "R",
+            "ᴜ": "U",
+            "ᴠ": "V",
+            "ᴡ": "W",
+            "ʏ": "Y",
+            "ᴢ": "Z",
+            "á": "a",
+            "ă": "a",
+            "ắ": "a",
+            "ặ": "a",
+            "ằ": "a",
+            "ẳ": "a",
+            "ẵ": "a",
+            "ǎ": "a",
+            "â": "a",
+            "ấ": "a",
+            "ậ": "a",
+            "ầ": "a",
+            "ẩ": "a",
+            "ẫ": "a",
+            "ä": "a",
+            "ǟ": "a",
+            "ȧ": "a",
+            "ǡ": "a",
+            "ạ": "a",
+            "ȁ": "a",
+            "à": "a",
+            "ả": "a",
+            "ȃ": "a",
+            "ā": "a",
+            "ą": "a",
+            "ᶏ": "a",
+            "ẚ": "a",
+            "å": "a",
+            "ǻ": "a",
+            "ḁ": "a",
+            "ⱥ": "a",
+            "ã": "a",
+            "ꜳ": "aa",
+            "æ": "ae",
+            "ǽ": "ae",
+            "ǣ": "ae",
+            "ꜵ": "ao",
+            "ꜷ": "au",
+            "ꜹ": "av",
+            "ꜻ": "av",
+            "ꜽ": "ay",
+            "ḃ": "b",
+            "ḅ": "b",
+            "ɓ": "b",
+            "ḇ": "b",
+            "ᵬ": "b",
+            "ᶀ": "b",
+            "ƀ": "b",
+            "ƃ": "b",
+            "ɵ": "o",
+            "ć": "c",
+            "č": "c",
+            "ç": "c",
+            "ḉ": "c",
+            "ĉ": "c",
+            "ɕ": "c",
+            "ċ": "c",
+            "ƈ": "c",
+            "ȼ": "c",
+            "ď": "d",
+            "ḑ": "d",
+            "ḓ": "d",
+            "ȡ": "d",
+            "ḋ": "d",
+            "ḍ": "d",
+            "ɗ": "d",
+            "ᶑ": "d",
+            "ḏ": "d",
+            "ᵭ": "d",
+            "ᶁ": "d",
+            "đ": "d",
+            "ɖ": "d",
+            "ƌ": "d",
+            "ı": "i",
+            "ȷ": "j",
+            "ɟ": "j",
+            "ʄ": "j",
+            "ǳ": "dz",
+            "ǆ": "dz",
+            "é": "e",
+            "ĕ": "e",
+            "ě": "e",
+            "ȩ": "e",
+            "ḝ": "e",
+            "ê": "e",
+            "ế": "e",
+            "ệ": "e",
+            "ề": "e",
+            "ể": "e",
+            "ễ": "e",
+            "ḙ": "e",
+            "ë": "e",
+            "ė": "e",
+            "ẹ": "e",
+            "ȅ": "e",
+            "è": "e",
+            "ẻ": "e",
+            "ȇ": "e",
+            "ē": "e",
+            "ḗ": "e",
+            "ḕ": "e",
+            "ⱸ": "e",
+            "ę": "e",
+            "ᶒ": "e",
+            "ɇ": "e",
+            "ẽ": "e",
+            "ḛ": "e",
+            "ꝫ": "et",
+            "ḟ": "f",
+            "ƒ": "f",
+            "ᵮ": "f",
+            "ᶂ": "f",
+            "ǵ": "g",
+            "ğ": "g",
+            "ǧ": "g",
+            "ģ": "g",
+            "ĝ": "g",
+            "ġ": "g",
+            "ɠ": "g",
+            "ḡ": "g",
+            "ᶃ": "g",
+            "ǥ": "g",
+            "ḫ": "h",
+            "ȟ": "h",
+            "ḩ": "h",
+            "ĥ": "h",
+            "ⱨ": "h",
+            "ḧ": "h",
+            "ḣ": "h",
+            "ḥ": "h",
+            "ɦ": "h",
+            "ẖ": "h",
+            "ħ": "h",
+            "ƕ": "hv",
+            "í": "i",
+            "ĭ": "i",
+            "ǐ": "i",
+            "î": "i",
+            "ï": "i",
+            "ḯ": "i",
+            "ị": "i",
+            "ȉ": "i",
+            "ì": "i",
+            "ỉ": "i",
+            "ȋ": "i",
+            "ī": "i",
+            "į": "i",
+            "ᶖ": "i",
+            "ɨ": "i",
+            "ĩ": "i",
+            "ḭ": "i",
+            "ꝺ": "d",
+            "ꝼ": "f",
+            "ᵹ": "g",
+            "ꞃ": "r",
+            "ꞅ": "s",
+            "ꞇ": "t",
+            "ꝭ": "is",
+            "ǰ": "j",
+            "ĵ": "j",
+            "ʝ": "j",
+            "ɉ": "j",
+            "ḱ": "k",
+            "ǩ": "k",
+            "ķ": "k",
+            "ⱪ": "k",
+            "ꝃ": "k",
+            "ḳ": "k",
+            "ƙ": "k",
+            "ḵ": "k",
+            "ᶄ": "k",
+            "ꝁ": "k",
+            "ꝅ": "k",
+            "ĺ": "l",
+            "ƚ": "l",
+            "ɬ": "l",
+            "ľ": "l",
+            "ļ": "l",
+            "ḽ": "l",
+            "ȴ": "l",
+            "ḷ": "l",
+            "ḹ": "l",
+            "ⱡ": "l",
+            "ꝉ": "l",
+            "ḻ": "l",
+            "ŀ": "l",
+            "ɫ": "l",
+            "ᶅ": "l",
+            "ɭ": "l",
+            "ł": "l",
+            "ǉ": "lj",
+            "ſ": "s",
+            "ẜ": "s",
+            "ẛ": "s",
+            "ẝ": "s",
+            "ḿ": "m",
+            "ṁ": "m",
+            "ṃ": "m",
+            "ɱ": "m",
+            "ᵯ": "m",
+            "ᶆ": "m",
+            "ń": "n",
+            "ň": "n",
+            "ņ": "n",
+            "ṋ": "n",
+            "ȵ": "n",
+            "ṅ": "n",
+            "ṇ": "n",
+            "ǹ": "n",
+            "ɲ": "n",
+            "ṉ": "n",
+            "ƞ": "n",
+            "ᵰ": "n",
+            "ᶇ": "n",
+            "ɳ": "n",
+            "ñ": "n",
+            "ǌ": "nj",
+            "ó": "o",
+            "ŏ": "o",
+            "ǒ": "o",
+            "ô": "o",
+            "ố": "o",
+            "ộ": "o",
+            "ồ": "o",
+            "ổ": "o",
+            "ỗ": "o",
+            "ö": "o",
+            "ȫ": "o",
+            "ȯ": "o",
+            "ȱ": "o",
+            "ọ": "o",
+            "ő": "o",
+            "ȍ": "o",
+            "ò": "o",
+            "ỏ": "o",
+            "ơ": "o",
+            "ớ": "o",
+            "ợ": "o",
+            "ờ": "o",
+            "ở": "o",
+            "ỡ": "o",
+            "ȏ": "o",
+            "ꝋ": "o",
+            "ꝍ": "o",
+            "ⱺ": "o",
+            "ō": "o",
+            "ṓ": "o",
+            "ṑ": "o",
+            "ǫ": "o",
+            "ǭ": "o",
+            "ø": "o",
+            "ǿ": "o",
+            "õ": "o",
+            "ṍ": "o",
+            "ṏ": "o",
+            "ȭ": "o",
+            "ƣ": "oi",
+            "ꝏ": "oo",
+            "ɛ": "e",
+            "ᶓ": "e",
+            "ɔ": "o",
+            "ᶗ": "o",
+            "ȣ": "ou",
+            "ṕ": "p",
+            "ṗ": "p",
+            "ꝓ": "p",
+            "ƥ": "p",
+            "ᵱ": "p",
+            "ᶈ": "p",
+            "ꝕ": "p",
+            "ᵽ": "p",
+            "ꝑ": "p",
+            "ꝙ": "q",
+            "ʠ": "q",
+            "ɋ": "q",
+            "ꝗ": "q",
+            "ŕ": "r",
+            "ř": "r",
+            "ŗ": "r",
+            "ṙ": "r",
+            "ṛ": "r",
+            "ṝ": "r",
+            "ȑ": "r",
+            "ɾ": "r",
+            "ᵳ": "r",
+            "ȓ": "r",
+            "ṟ": "r",
+            "ɼ": "r",
+            "ᵲ": "r",
+            "ᶉ": "r",
+            "ɍ": "r",
+            "ɽ": "r",
+            "ↄ": "c",
+            "ꜿ": "c",
+            "ɘ": "e",
+            "ɿ": "r",
+            "ś": "s",
+            "ṥ": "s",
+            "š": "s",
+            "ṧ": "s",
+            "ş": "s",
+            "ŝ": "s",
+            "ș": "s",
+            "ṡ": "s",
+            "ṣ": "s",
+            "ṩ": "s",
+            "ʂ": "s",
+            "ᵴ": "s",
+            "ᶊ": "s",
+            "ȿ": "s",
+            "ɡ": "g",
+            "ᴑ": "o",
+            "ᴓ": "o",
+            "ᴝ": "u",
+            "ť": "t",
+            "ţ": "t",
+            "ṱ": "t",
+            "ț": "t",
+            "ȶ": "t",
+            "ẗ": "t",
+            "ⱦ": "t",
+            "ṫ": "t",
+            "ṭ": "t",
+            "ƭ": "t",
+            "ṯ": "t",
+            "ᵵ": "t",
+            "ƫ": "t",
+            "ʈ": "t",
+            "ŧ": "t",
+            "ᵺ": "th",
+            "ɐ": "a",
+            "ᴂ": "ae",
+            "ǝ": "e",
+            "ᵷ": "g",
+            "ɥ": "h",
+            "ʮ": "h",
+            "ʯ": "h",
+            "ᴉ": "i",
+            "ʞ": "k",
+            "ꞁ": "l",
+            "ɯ": "m",
+            "ɰ": "m",
+            "ᴔ": "oe",
+            "ɹ": "r",
+            "ɻ": "r",
+            "ɺ": "r",
+            "ⱹ": "r",
+            "ʇ": "t",
+            "ʌ": "v",
+            "ʍ": "w",
+            "ʎ": "y",
+            "ꜩ": "tz",
+            "ú": "u",
+            "ŭ": "u",
+            "ǔ": "u",
+            "û": "u",
+            "ṷ": "u",
+            "ü": "u",
+            "ǘ": "u",
+            "ǚ": "u",
+            "ǜ": "u",
+            "ǖ": "u",
+            "ṳ": "u",
+            "ụ": "u",
+            "ű": "u",
+            "ȕ": "u",
+            "ù": "u",
+            "ủ": "u",
+            "ư": "u",
+            "ứ": "u",
+            "ự": "u",
+            "ừ": "u",
+            "ử": "u",
+            "ữ": "u",
+            "ȗ": "u",
+            "ū": "u",
+            "ṻ": "u",
+            "ų": "u",
+            "ᶙ": "u",
+            "ů": "u",
+            "ũ": "u",
+            "ṹ": "u",
+            "ṵ": "u",
+            "ᵫ": "ue",
+            "ꝸ": "um",
+            "ⱴ": "v",
+            "ꝟ": "v",
+            "ṿ": "v",
+            "ʋ": "v",
+            "ᶌ": "v",
+            "ⱱ": "v",
+            "ṽ": "v",
+            "ꝡ": "vy",
+            "ẃ": "w",
+            "ŵ": "w",
+            "ẅ": "w",
+            "ẇ": "w",
+            "ẉ": "w",
+            "ẁ": "w",
+            "ⱳ": "w",
+            "ẘ": "w",
+            "ẍ": "x",
+            "ẋ": "x",
+            "ᶍ": "x",
+            "ý": "y",
+            "ŷ": "y",
+            "ÿ": "y",
+            "ẏ": "y",
+            "ỵ": "y",
+            "ỳ": "y",
+            "ƴ": "y",
+            "ỷ": "y",
+            "ỿ": "y",
+            "ȳ": "y",
+            "ẙ": "y",
+            "ɏ": "y",
+            "ỹ": "y",
+            "ź": "z",
+            "ž": "z",
+            "ẑ": "z",
+            "ʑ": "z",
+            "ⱬ": "z",
+            "ż": "z",
+            "ẓ": "z",
+            "ȥ": "z",
+            "ẕ": "z",
+            "ᵶ": "z",
+            "ᶎ": "z",
+            "ʐ": "z",
+            "ƶ": "z",
+            "ɀ": "z",
+            "ﬀ": "ff",
+            "ﬃ": "ffi",
+            "ﬄ": "ffl",
+            "ﬁ": "fi",
+            "ﬂ": "fl",
+            "ĳ": "ij",
+            "œ": "oe",
+            "ﬆ": "st",
+            "ₐ": "a",
+            "ₑ": "e",
+            "ᵢ": "i",
+            "ⱼ": "j",
+            "ₒ": "o",
+            "ᵣ": "r",
+            "ᵤ": "u",
+            "ᵥ": "v",
+            "ₓ": "x"
+        };
+        return text.replace(/[^A-Za-z0-9\[\] ]/g, function(a) {
+            return LATIN_MAP[a] || a;
+        });
+    }
+
+    function li_create(tag, o) {
+        var element = document.createElement(tag);
+        for (var i in o) {
+            var val = o[i];
+            if (i === "inside") {
+                $(val).appendChild(element);
+            } else if (i === "around") {
+                var ref = $(val);
+                ref.parentNode.insertBefore(element, ref);
+                element.appendChild(ref);
+                if (ref.getAttribute("autofocus") != null) {
+                    ref.focus();
+                }
+            } else if (i in element) {
+                element[i] = val;
+            } else {
+                element.setAttribute(i, val);
+            }
+        }
+        return element;
+    };
+    var buscador_cabecera_autocomplete = null;
+    if (jQuery('#buscador-cabecera').length > 0) {
+        buscador_cabecera_autocomplete = new Awesomplete('#buscador-cabecera', {
+            sort: false,
+            filter: function(text, input) {
+                text_latinize = latinize(text);
+                input_latinize = latinize(input);
+                if (Awesomplete.FILTER_CONTAINS(text_latinize, input_latinize.match(/[^,]*$/)[0])) {
+                    return true;
+                }
+                return Awesomplete.FILTER_CONTAINS(text, input.match(/[^,]*$/)[0]);
+            },
+            item: function(text, input) {
+                text_latinize = latinize(text.label).toLowerCase();
+                input_latinize = latinize(input).toLowerCase();
+                inicio = text_latinize.indexOf(input_latinize);
+                if (inicio > -1) {
+                    fin = inicio + input.length;
+                    html = text.substring(0, inicio) + "<mark>" + text.substring(inicio, fin) + "</mark>" + text.substring(fin, text.length);
+                } else {
+                    html = text;
+                }
+                return li_create("li", {
+                    innerHTML: html,
+                    "aria-selected": "false",
+                    "id": "awesomplete_list_" + this.count + "_item_0"
+                });
+
+            }
+        });
+        gnossAutocomplete('#buscador-cabecera', buscador_cabecera_autocomplete);
+    }
+    jQuery(document).on('awesomplete-select', '#buscador-cabecera, #error_404_search', function(e) {
+        e.preventDefault();
+        param = encodeURI(e.originalEvent.text.value);
+        redirectSearchPage(param);
+    });
+    jQuery(document).on('keyup', '#buscador-cabecera, #error_404_search', function(e) {
+        e.preventDefault();
+        var value = jQuery(this).val();
+        if (e.keyCode === 13 && value.length > 1) {
+            value = removeSpecials(value);
+            param = encodeURI('?searchbbvaresearch=' + value);
+            redirectSearchPage(param);
+        }
+    });
+    jQuery(document).on('click', '.content_buscador .boton', function(e) {
+        e.preventDefault();
+        var value = jQuery('#buscador-cabecera').val();
+        if (value.length > 1) {
+            value = removeSpecials(value);
+            param = encodeURI('?searchbbvaresearch=' + value);
+            redirectSearchPage(param);
+        }
+    });
+
+    jQuery(document).on('click', '#resultadosBusqueda .borrarFiltros', function() {
+        jQuery('#idiomaHeader_es').attr("href", jQuery('#idiomaHeader_es').attr('href').substring(0, jQuery('#idiomaHeader_es').attr('href').indexOf('?')));
+        jQuery('#idiomaHeader_en').attr("href", jQuery('#idiomaHeader_en').attr('href').substring(0, jQuery('#idiomaHeader_en').attr('href').indexOf('?')));
+        jQuery('#idiomaPanelLatera_es').attr("href", jQuery('#idiomaPanelLatera_es').attr('href').substring(0, jQuery('#idiomaPanelLatera_es').attr('href').indexOf('?')));
+        jQuery('#idiomaPanelLatera_en').attr("href", jQuery('#idiomaPanelLatera_en').attr('href').substring(0, jQuery('#idiomaPanelLatera_en').attr('href').indexOf('?')));
+        addURLQueryStrings();
+    });
+    /**********************************/
+
+    /* Buscador 404 */
+    var buscador_404_autocomplete = null;
+    if (jQuery('#error_404_search').length > 0) {
+        buscador_404_autocomplete = new Awesomplete('#error_404_search', {
+            sort: false,
+            filter: function(text, input) {
+                text_latinize = latinize(text);
+                input_latinize = latinize(input);
+                if (Awesomplete.FILTER_CONTAINS(text_latinize, input_latinize.match(/[^,]*$/)[0])) {
+                    return true;
+                }
+                return Awesomplete.FILTER_CONTAINS(text, input.match(/[^,]*$/)[0]);
+            },
+            item: function(text, input) {
+                text_latinize = latinize(text.label).toLowerCase();
+                input_latinize = latinize(input).toLowerCase();
+                inicio = text_latinize.indexOf(input_latinize);
+                if (inicio > -1) {
+                    fin = inicio + input.length;
+                    html = text.substring(0, inicio) + "<mark>" + text.substring(inicio, fin) + "</mark>" + text.substring(fin, text.length);
+                } else {
+                    html = text;
+                }
+                return li_create("li", {
+                    innerHTML: html,
+                    "aria-selected": "false",
+                    "id": "awesomplete_list_" + this.count + "_item_0"
+                });
+
+            }
+        });
+        gnossAutocomplete('#error_404_search', buscador_404_autocomplete);
+    }
+    jQuery(document).on('click', '.componente_404 .icon-tools_search', function(e) {
+        e.preventDefault();
+        var value = jQuery('#error_404_search').val();
+        param = encodeURI('?searchbbvaresearch=' + value);
+        redirectSearchPage(param);
+    });
+    jQuery('.wrapper-search form').submit(function(e) {
+        e.preventDefault();
+    });
+    /**********************************/
+
+    /* Tabs quienes somos */
+    if (jQuery('#page_QuienesSomos').length > 0) {
+        jQuery(window).scrollTop(0);
+        var hash = window.location.hash.substr(1);
+        if (hash.length > 0) {
+            jQuery('li#' + hash).trigger('click');
+        }
+        jQuery('.tabsNavs_gen_navList_item').click(function(e) {
+            id = jQuery(this).attr('id');
+            window.location.hash = id;
+            jQuery(window).scrollTop(0);
+        });
+    }
+    /**********************************/
+
+    /* Tabs indicadores */
+    if (jQuery('#page_indicadores').length > 0) {
+        jQuery(window).scrollTop(0);
+        var hash = window.location.hash.substr(1);
+        if (hash.length > 0) {
+            jQuery('li#' + hash).trigger('click');
+        }
+        jQuery('.tabsNavs_gen_navList_item').click(function(e) {
+            id = jQuery(this).attr('id');
+            window.location.hash = id;
+            jQuery(window).scrollTop(0);
+        });
+    }
+    /**********************************/
+
+    /* Enlaces Sobre BBVA Research footer */
+    if (jQuery('#page_QuienesSomos').length > 0) {
+        jQuery('.lista_enlacesPrefooter li a').click(function(e) {
+            href = jQuery(this).attr("href");
+            if (href.indexOf('/quienes-somos/') !== -1 || href.indexOf('/about-us/') !== -1) {
+                e.preventDefault();
+                hash = href.substring(href.indexOf('#'));
+                jQuery('.tabsNavs_gen_navList_item' + hash).trigger("click");
+            }
+        });
+    }
+    /**************************************/
+
+    /* Cookie idioma */
+    jQuery('body').on('click', '.itemLista_idioma a, .lista_menuIdiomas a', function(event) {
+        lang = ((jQuery(this).attr('id') == 'idiomaHeader_es' || jQuery(this).attr('id') == 'idiomaPanelLatera_es') ? 'es' : 'en');
+        delete_cookie('os_lang');
+        setCookie('os_lang', lang, 7);
+    });
+    /**************************************/
+
+
+
+    /**************************************/
+
+    /* Ocultar enlace de autores en publicaciones */
+    if (jQuery('#detalle_publicacion').length > 0) {
+        hideAuthorsLinkInPublication();
+    }
+    /**********************************************/
+
+
+    /* Adapto el nombre de usuario del header al tamaño de la pantalla */
+    jQuery(window).resize(function() {
+        if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+            BbvaComponent.getUserLogged(function(err, user) {
+                if (!err) {
+                    var user_name = user.get('optional_data').surname;
+                    user_name = user_name.replace('&nbsp;', ' ');
+                    if (window.innerWidth < 992) {
+                        user_name_desktop = ((user_name.length >= 14) ? user_name.substring(0, 13).trim() + '&hellip;' : user_name);
+                    } else {
+                        user_name_desktop = ((user_name.length >= 45) ? user_name.substring(0, 44).trim() + '&hellip;' : user_name);
+                    }
+                    jQuery('.itemLista_loginUser a span').html(user_name_desktop);
+                }
+            });
+        }
+    });
+    /*******************************************************************/
+
+});
+
+// Aceptar Política de cookies
+jQuery(document).on('click', '#cn-accept-cookie', function() {
+    setCookie('viewed_cookie_policy', 'yes', 365);
+});
+
+
+jQuery(document).ajaxComplete(function(event, xhr, settings) {
+    if (typeof settings.url != 'undefined' && (settings.url).indexOf('/bbva-components/form') !== -1) {
+        // Oculto el label encima del recaptcha "Código de seguridad"
+        if (jQuery('#page_contacta #ow_recaptcha').length > 0) {
+            jQuery('#page_contacta #ow_recaptcha').siblings('label').hide();
+        }
+    }
+});
+
+function isItemInArray(id, arr) {
+    for (var i = 0; i < arr.length; i++) {
+        if (arr[i][0] == id) {
+            return true; // Found it
+        }
+    }
+    return false; // Not found
+}
+
+function deleteItemInArray(id, arr) {
+    for (var i = 0; i < arr.length; i++) {
+        if (arr[i][0] == id) {
+            arr.splice(i, 1);
+            return;
+        }
+    }
+}
+
+// Añadir a "Leer más tarde"
+jQuery(document).on("click", "#lista_item_addlist", function() {
+    jthis = jQuery(this);
+    login_modal = '<div class="modal fade modal_addComment" id="login_requerido" role="dialog"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><div style="text-align: center;">' + object_name.text_estar_logado + '</div></div></div></div>';
+    jthis.prop("disabled", true);
+    if (jQuery("#detalle_publicacion").length > 0 && jQuery(this).parents("[id^=card-]").find("article").hasClass('card_small') == false) {
+        var id = jQuery("#detalle_publicacion").data("id");
+        var fecha = jQuery("#detalle_publicacion").data("fecha");
+    } else {
+        var id = jthis.parents("[id^=card-]").attr("id").split("-")[1];
+        var fecha = jthis.parents("[id^=card-]").data("fecha");
+    }
+    if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+        BbvaComponent.getUserLogged(function(err, user) { // cargamos al usuario logado en nuestra aplicación
+
+            if (!err) {
+                custom_json = user.get('custom');
+
+                if (typeof custom_json == 'string')
+                    custom_json = JSON.parse(custom_json);
+
+                deleteItemInArray(id, custom_json["listalectura"]["mibiblioteca"]);
+                custom_json["listalectura"]["leerluego"].push([id, fecha]);
+
+                user.set('custom', custom_json);
+
+                // Actualizar número del header
+                jQuery('.lecturaNum strong').html(custom_json["listalectura"]["leerluego"].length);
+                jQuery(".mobilenav-tools__item--reading-list a .lecturaNum").html(custom_json["listalectura"]["leerluego"].length);
+
+                user.update(function(err) {
+                    if (!err) {
+                        if (jQuery("#card-" + id).length > 0) {
+                            if (jQuery("#card-" + id + ' #lista_item_removelistBiblioteca').length > 0) {
+                                jQuery("#card-" + id + ' #lista_item_removelistBiblioteca').remove();
+                                jQuery("#card-" + id + " #lista_item_comment").before('<li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                            }
+                            jQuery("#card-" + id + " #lista_item_addlist").remove();
+                            jQuery("#card-" + id + " .lista_toolsOtros #lista_item_copyEnlace").after('<li id="lista_item_removelist"><a href="javascript:void(0)"><i class="icon-listaLectura_remove"></i><span>' + object_name.eliminar_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        } else if (jQuery('#detalle_publicacion').length > 0) {
+                            jQuery('#lista_item_addlist').remove();
+                            jQuery('#lista_item_addlistBiblioteca').remove();
+                            jQuery('#lista_item_removelistBiblioteca').remove();
+
+                            jQuery('.detalleHeaderMobile_compartirTools #lista_item_addlist').remove();
+                            jQuery('.detalleHeaderMobile_compartirTools #lista_item_addlistBiblioteca').remove();
+                            jQuery('.detalleHeaderMobile_compartirTools #lista_item_removelistBiblioteca').remove();
+
+                            jQuery(".lista_compartirTools #lista_item_copyEnlace").after('<li id="lista_item_removelist"><a href="javascript:void(0)" title="' + object_name.eliminar_lista_lectura.replace(/"/g, '&#34;') + '"><i class="icon-listaLectura_remove"></i><span>' + object_name.eliminar_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li><li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)" title="' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                        }
+                        paintListaLectura();
+                    }
+                });
+
+
+            } else {
+                if (jQuery("#login_requerido").length == 0)
+                    jQuery("body").append(login_modal);
+                jQuery("#tooltip_otrosTools").hide();
+                jQuery("#login_requerido").modal();
+                jthis.prop("disabled", false);
+                //console.log("LOGIN");
+            }
+        });
+    } else {
+        if (jQuery("#login_requerido").length == 0)
+            jQuery("body").append(login_modal);
+        jQuery("#tooltip_otrosTools").hide();
+        jQuery("#login_requerido").modal();
+        jthis.prop("disabled", false);
+        //console.log("LOGIN");
+    }
+})
+
+// Eliminar de "Leer maś tarde"
+jQuery(document).on("click", "#lista_item_removelist", function() {
+    jQuery(this).prop("disabled", true);
+    if (jQuery("#detalle_publicacion").length > 0 && jQuery(this).parents("[id^=card-]").find("article").hasClass('card_small') == false) {
+        var id = jQuery("#detalle_publicacion").data("id");
+        var fecha = jQuery("#detalle_publicacion").data("fecha");
+    } else {
+        var id = jQuery(this).parents("[id^=card-]").attr("id").split("-")[1];
+        var fecha = jQuery(this).parents("[id^=card-]").data("fecha");
+    }
+    if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+        BbvaComponent.getUserLogged(function(err, user) { // cargamos al usuario logado en nuestra aplicación
+
+            if (!err) {
+                custom_json = user.get('custom');
+
+                if (typeof custom_json == 'string')
+                    custom_json = JSON.parse(custom_json);
+
+                deleteItemInArray(id, custom_json["listalectura"]["leerluego"]);
+
+                user.set('custom', custom_json);
+
+                // Actualizar número del header
+                jQuery('.lecturaNum strong').html(custom_json["listalectura"]["leerluego"].length);
+                jQuery(".mobilenav-tools__item--reading-list a .lecturaNum").html(custom_json["listalectura"]["leerluego"].length);
+
+                user.update(function(err) {
+                    if (!err) {
+                        if (jQuery("#card-" + id).length > 0) {
+                            jQuery("#card-" + id + " #lista_item_removelist").remove();
+                            jQuery("#card-" + id + " .lista_toolsOtros #lista_item_copyEnlace").after('<li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        } else if (jQuery('#detalle_publicacion').length > 0) {
+                            jQuery("#lista_item_removelist").remove();
+                            jQuery("#lista_item_addlistBiblioteca").remove();
+
+                            jQuery(".detalleHeaderMobile_compartirTools #lista_item_removelist").remove();
+                            jQuery(".detalleHeaderMobile_compartirTools #lista_item_addlistBiblioteca").remove();
+
+                            jQuery(".lista_compartirTools #lista_item_copyEnlace").after('<li id="lista_item_addlist"><a href="javascript:void(0)" title="' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li><li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)" title="' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                        }
+                        paintListaLectura();
+                    }
+                });
+            } else {
+                //console.log("LOGIN");
+            }
+        });
+    } else {
+        //console.log("LOGIN");
+    }
+});
+
+// Añadir a "Mi biblioteca"
+jQuery(document).on("click", "#lista_item_addlistBiblioteca", function() {
+    jthis = jQuery(this);
+    login_modal = '<div class="modal fade modal_addComment" id="login_requerido" role="dialog"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><div style="text-align: center;">' + object_name.text_estar_logado + '</div></div></div></div>';
+    jthis.prop("disabled", true);
+    if (jQuery("#detalle_publicacion").length > 0 && jQuery(this).parents("[id^=card-]").find("article").hasClass('card_small') == false) {
+        var id = jQuery("#detalle_publicacion").data("id");
+        var fecha = jQuery("#detalle_publicacion").data("fecha");
+    } else {
+        var id = jQuery(this).parents("[id^=card-]").attr("id").split("-")[1];
+        var fecha = jQuery(this).parents("[id^=card-]").data("fecha");
+    }
+    if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+        BbvaComponent.getUserLogged(function(err, user) { // cargamos al usuario logado en nuestra aplicación
+
+            if (!err) {
+                custom_json = user.get('custom');
+
+                if (typeof custom_json == 'string')
+                    custom_json = JSON.parse(custom_json);
+
+                deleteItemInArray(id, custom_json["listalectura"]["leerluego"]);
+                custom_json["listalectura"]["mibiblioteca"].push([id, fecha]);
+
+                user.set('custom', custom_json);
+
+                // Actualizar número del header
+                jQuery('.lecturaNum strong').html(custom_json["listalectura"]["leerluego"].length);
+                jQuery(".mobilenav-tools__item--reading-list a .lecturaNum").html(custom_json["listalectura"]["leerluego"].length);
+
+                user.update(function(err) {
+                    if (!err) {
+                        if (jQuery("#card-" + id).length > 0) {
+                            if (jQuery("#card-" + id + ' #lista_item_removelist').length > 0) {
+                                jQuery("#card-" + id + ' #lista_item_removelist').remove();
+                                jQuery("#card-" + id + " .lista_toolsOtros #lista_item_copyEnlace").after('<li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                            }
+                            jQuery("#card-" + id + " #lista_item_addlistBiblioteca").remove();
+                            jQuery("#card-" + id + " #lista_item_comment").before('<li id="lista_item_removelistBiblioteca" title="' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '"><a href="javascript:void(0)"><i class="icon-biblioteca_remove"></i><span>' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                        } else if (jQuery('#detalle_publicacion').length > 0) {
+                            jQuery("#lista_item_removelist").remove();
+                            jQuery("#lista_item_addlist").remove();
+                            jQuery("#lista_item_addlistBiblioteca").remove();
+
+                            jQuery(".detalleHeaderMobile_compartirTools #lista_item_removelist").remove();
+                            jQuery(".detalleHeaderMobile_compartirTools #lista_item_addlist").remove();
+                            jQuery(".detalleHeaderMobile_compartirTools #lista_item_addlistBiblioteca").remove();
+
+                            jQuery("#lista_item_comment").before('<li id="lista_item_addlist"><a href="javascript:void(0)" title="' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '"><i class="icon-listaLectura_add"></i><span class="iconTexto">' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li><li id="lista_item_removelistBiblioteca"><a href="javascript:void(0)" title="' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '"><i class="icon-biblioteca_remove"></i><span class="iconTexto">' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                            jQuery(".detalleHeaderMobile_compartirTools #lista_item_comment").before('<li id="lista_item_addlist"><a href="javascript:void(0)" title="' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '"><i class="icon-listaLectura_add"></i><span class="iconTexto">' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li><li id="lista_item_removelistBiblioteca"><a href="javascript:void(0)" title="' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '"><i class="icon-biblioteca_remove"></i><span class="iconTexto">' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                        }
+                    }
+                    paintListaLectura();
+                });
+
+            } else {
+                if (jQuery("#login_requerido").length == 0)
+                    jQuery("body").append(login_modal);
+                jQuery("#tooltip_otrosTools").hide();
+                jQuery("#login_requerido").modal();
+                jthis.prop("disabled", false);
+                //console.log("LOGIN");
+            }
+        });
+    } else {
+        if (jQuery("#login_requerido").length == 0)
+            jQuery("body").append(login_modal);
+        jQuery("#tooltip_otrosTools").hide();
+        jQuery("#login_requerido").modal();
+        jthis.prop("disabled", false);
+        //console.log("LOGIN");
+    }
+});
+
+// Eliminar de "Mi biblioteca"
+jQuery(document).on("click", "#lista_item_removelistBiblioteca", function() {
+    jQuery(this).prop("disabled", true);
+    if (jQuery("#detalle_publicacion").length > 0 && jQuery(this).parents("[id^=card-]").find("article").hasClass('card_small') == false) {
+        var id = jQuery("#detalle_publicacion").data("id");
+        var fecha = jQuery("#detalle_publicacion").data("fecha");
+    } else {
+        var id = jQuery(this).parents("[id^=card-]").attr("id").split("-")[1];
+        var fecha = jQuery(this).parents("[id^=card-]").data("fecha");
+    }
+    if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+        BbvaComponent.getUserLogged(function(err, user) { // cargamos al usuario logado en nuestra aplicación
+            if (!err) {
+                custom_json = user.get('custom');
+
+                if (typeof custom_json == 'string')
+                    custom_json = JSON.parse(custom_json);
+
+                deleteItemInArray(id, custom_json["listalectura"]["mibiblioteca"]);
+
+                user.set('custom', custom_json);
+
+                // Actualizar número del header
+                jQuery('.lecturaNum strong').html(custom_json["listalectura"]["leerluego"].length);
+                jQuery(".mobilenav-tools__item--reading-list a .lecturaNum").html(custom_json["listalectura"]["leerluego"].length);
+
+                user.update(function(err) {
+                    if (!err) {
+                        if (jQuery("#card-" + id).length > 0) {
+                            jQuery("#card-" + id + " #lista_item_removelistBiblioteca").remove();
+                            jQuery("#card-" + id + " #lista_item_comment").before('<li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                        } else if (jQuery('#detalle_publicacion').length > 0) {
+                            jQuery("#lista_item_removelistBiblioteca").remove();
+
+                            jQuery(".detalleHeaderMobile_compartirTools #lista_item_removelistBiblioteca").remove();
+
+                            jQuery("#lista_item_comment").before('<li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"  title="' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                            jQuery(".detalleHeaderMobile_compartirTools #lista_item_comment").before('<li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"  title="' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+
+                        }
+                        paintListaLectura();
+                    }
+                });
+
+            } else {
+                //console.log("LOGIN");
+            }
+        });
+    } else {
+        //console.log("LOGIN");
+    }
+});
+
+/*
+ * Añade a las URLs de los enlaces de cambio de idioma los parámetros, si los tuviese
+ */
+function addURLQueryStrings() {
+    // Parámetros de las URLs de cambio de idioma (Si estoy en el buscador solo la cadena de texto, no los filtros)
+    queryString = window.location.search;
+    if (!(window.location.pathname.indexOf('/buscador/') > -1 || window.location.pathname.indexOf('/search/') > -1)) {
+        queryString = '';
+    }
+    jQuery('#idiomaHeader_es').attr("href", jQuery('#idiomaHeader_es').attr('href') + queryString);
+    jQuery('#idiomaHeader_en').attr("href", jQuery('#idiomaHeader_en').attr('href') + queryString);
+    jQuery('#idiomaPanelLatera_es').attr("href", jQuery('#idiomaPanelLatera_es').attr('href') + queryString);
+    jQuery('#idiomaPanelLatera_en').attr("href", jQuery('#idiomaPanelLatera_en').attr('href') + queryString);
+}
+
+/*
+ * Va a la sección de comentarios en una publicación. Si open=true, abre la vetana de nuevo comentario
+ */
+function goToComment(open) {
+    // TODO: comprobar si está logado. ¿En qué punto?
+    jQuery('html, body').animate({
+        'scrollTop': jQuery("#section_infoComentar").position().top
+    }, {
+        duration: 1000,
+        complete: function() {
+            if (open == "true") {
+                jQuery('.comentariosEscribirNuevo a').click();
+            }
+        }
+    });
+
+}
+
+/** Si solo hay un audio, añado un onclick con esta función para que se abra directamente sin modal intermedia */
+function mostrarAudioUnico(button) {
+    dataTarget = jQuery(button).attr('data-target');
+    jQuery(dataTarget).find('.publicacion_tipoArchivos_title_link').click();
+}
+
+/** Si solo hay un video, añado un onclick con esta función para que se abra directamente sin modal intermedia */
+function mostrarVideoUnico(button) {
+    dataTarget = jQuery(button).attr('data-target');
+    jQuery(dataTarget).find('.publicacion_tipoArchivos_title_link').click();
+}
+
+/** Función para descargar uno o varios archivos */
+function downloadAll(urls, thread, idPublicacion) {
+    if (urls.length > 0) {
+        var link = document.createElement('a');
+
+        link.style.display = 'none';
+
+        document.body.appendChild(link);
+
+        for (var i = 0; i < urls.length; i++) {
+            link.setAttribute('download', urls[i].split(/[\\/]/).pop());
+            link.setAttribute('href', urls[i]);
+            link.click();
+        }
+
+        // Espacio las llamadas a la API. Si las lanzo dentro del for, solo coge una visita
+        var interIndex = 0;
+        var interval = setInterval(function() {
+            if (interIndex == urls.length) {
+                clearInterval(interval);
+            } else {
+                addVisit(thread, idPublicacion);
+            }
+            interIndex++;
+        }, 500);
+
+        document.body.removeChild(link);
+    }
+}
+
+/**
+ * Función para sumar una visita a la publicación
+ * thread es la URL sin el domunio en español (Para contabilizar las descargas en español e inglés a un único thread)
+ * name es el ID de la publicación. Lo necesito para pintar el bloque de los más leídos
+ */
+function addVisit(thread, name) {
+    var mostpopular = '/bbva-components/mostpopular/';
+    thread = thread.replace(host, ''); // En pro, me pintan el dominio aunque en edición no... Lo quito
+    var url = host + mostpopular + '?project=' + projectId + '&thread=' + thread;
+    jQuery.ajax({
+        url: url,
+        method: 'POST',
+        data: {
+            title: name,
+        },
+        success: function(response) {
+            //console.log(response);
+        },
+        error: function() {
+            //console.log("error");
+        }
+    });
+}
+
+/**
+ * Función para sumar un "Me gusta" / "No me gusta"
+ * thread es el ID de la publicación
+ * Finalmente, hacemos uso del componente de OpenWeb. Al hacer click en las caritas, simulamos un click en el componente que realizar la funcionalidad
+ */
+function meGusta(thread, valor) {
+    // TODO: Cambiar dónde se hace click dependiendo del valor
+    if (valor == "true") {
+        jQuery('.bbvaLikes-button').click();
+        jQuery('#me-gusta a').attr('onclick', '');
+        jQuery('#me-gusta a').attr('style', 'cursor:default;');
+        //jQuery('#no-me-gusta a').attr('onclick', 'meGusta(' + jQuery('#detalle_publicacion').attr('data-id') + ',"false")');
+        //jQuery('#no-me-gusta a').attr('style', 'cursor:pointer;');
+        jQuery('#no-me-gusta a').attr('onclick', '');
+        jQuery('#no-me-gusta a').attr('style', 'cursor:default;');
+        jQuery('head').append('<style>#me-gusta a i:before{color:#004481 !important;}</style>');
+        jQuery('head').append('<style>#no-me-gusta a i:before{color:#666666 !important;}</style>');
+    } else {
+        jQuery('.bbvaDontLikes-button').click();
+        jQuery('#no-me-gusta a').attr('onclick', '');
+        jQuery('#no-me-gusta a').attr('style', 'cursor:default;');
+        //jQuery('#me-gusta a').attr('onclick', 'meGusta(' + jQuery('#detalle_publicacion').attr('data-id') + ',"true")');
+        //jQuery('#me-gusta a').attr('style', 'cursor:pointer;');
+        jQuery('#me-gusta a').attr('onclick', '');
+        jQuery('#me-gusta a').attr('style', 'cursor:default;');
+        jQuery('head').append('<style>#no-me-gusta a i:before{color:#004481 !important;}</style>');
+        jQuery('head').append('<style>#me-gusta a i:before{color:#666666 !important;}</style>');
+    }
+}
+
+/** Trae el valor de una cookie según su nombre */
+function getCookie(name) {
+    var value = "; " + document.cookie;
+    var parts = value.split("; " + name + "=");
+    if (parts.length == 2) return parts.pop().split(";").shift();
+}
+
+/** Setea una cookie */
+function setCookie(name, value, days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+// Función para obtener un parámetro GET de la URL actual según su nombre
+function getURLParameter(name) {
+    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+}
+
+/**************************** ORDENAR ******************************/
+var mas_recientes = []; // ids de publicaciones ordenadas por más reciente
+var mas_populares = []; // ids de publicaciones ordenadas por más populares
+
+// Cambiar ordenación
+jQuery('.lista_masrecientes a').on("click", function(event) {
+    event.preventDefault();
+
+    current_section = jQuery(this).closest('section');
+    jQuery('.lista_masrecientes a.active').removeClass('active');
+    jQuery(this).addClass('active');
+
+    jQuery(current_section).find("#inicio").val(0);
+    jQuery(current_section).find("#offset").val(0);
+    jQuery(current_section).find('.partial_cardsGrid > .row').empty();
+
+    if (jQuery('.lista_masrecientes a.active i').attr('class') == 'icon-nav_visualize') {
+
+        // Más populares
+        if (mas_populares.length == 0) {
+
+            // Fecha desde
+            fromDate = new Date();
+            fromDate.setDate(fromDate.getDate() - 10);
+            dd = fromDate.getDate();
+            mm = fromDate.getMonth() + 1;
+            yyyy = fromDate.getFullYear();
+            if (dd < 10) dd = '0' + dd;
+            if (mm < 10) mm = '0' + mm;
+            dateFrom = yyyy + '-' + mm + '-' + dd;
+
+            // Fecha hasta
+            today = new Date();
+            dd = today.getDate();
+            mm = today.getMonth() + 1;
+            yyyy = today.getFullYear();
+            if (dd < 10) dd = '0' + dd;
+            if (mm < 10) mm = '0' + mm;
+            dateTo = yyyy + '-' + mm + '-' + dd;
+
+            jQuery.get('/bbva-components/mostpopular/?dateFrom=' + dateFrom + '&dateTo=' + dateTo + '&project=' + projectId, function(data) {
+                //jQuery.getJSON("/wp-content/uploads/json/mostpopular.json", function(data) {
+                if (data.code == 200) {
+                    var results = data.data;
+                    mas_populares_todas = [];
+                    jQuery.each(results, function(key, val) {
+                        id = parseInt(val.title);
+                        mas_populares_todas.push(id);
+                    });
+                    subpath = jQuery(current_section).find('#subpath').val();
+                    order = jQuery(current_section).find('#orden').val();
+                    jQuery.getJSON("/wp-content/uploads/json/" + subpath + '/' + order + '.json', function(mas_recientes_todas) {
+
+                        // Obtengo los más populares de la categoría
+                        jQuery.each(mas_populares_todas, function(key, value) {
+                            idx = mas_recientes_todas.indexOf(value);
+                            if (idx != -1) {
+                                mas_populares.push(value);
+                                mas_recientes_todas.splice(idx, 1)
+                            }
+                        });
+
+                        /*mas_populares_categoria = mas_recientes_aux.filter(function(obj) {
+                            return mas_populares_aux.some(function(obj2) {
+                                return obj == obj2;
+                            });
+                        });
+                        otros = mas_recientes_aux.filter(function(obj) {
+                            return mas_populares_aux.some(function(obj2) {
+                                return obj != obj2;
+                            });
+                        });
+                        jQuery.each(mas_populares_categoria, function(key, value) {
+                            if (otros.indexOf(value) !== -1) {
+                                otros.splice(otros.indexOf(value), 1);
+                            }
+                        });*/
+
+                        mas_populares = mas_populares.concat(mas_recientes_todas);
+
+                        //console.log(mas_populares);
+
+                        var mostrar = parseInt(jQuery(current_section).find("#mostrar").val());
+                        var offset = parseInt(jQuery(current_section).find("#offset").val());
+                        loop(offset, mostrar, mas_populares);
+                    });
+
+                }
+            });
+        } else {
+            // Más populares leyendo de array
+            var mostrar = parseInt(jQuery(current_section).find("#mostrar").val());
+            var offset = parseInt(jQuery(current_section).find("#offset").val());
+            loop(offset, mostrar, mas_populares);
+        }
+    } else {
+        // Más recientes
+        var tipo = jQuery(current_section).find('#tipo').val(); // Tipo de post a traer (de momento siempre publicacion)
+        var subpath = jQuery(current_section).find('#subpath').val(); // Carpeta en la que busco la lista
+        var orden_cards = jQuery(current_section).find('#orden').val(); // order o ID de taxonomía
+        var path = "/wp-content/uploads/json/" + subpath + '/';
+        jQuery.getJSON(path + orden_cards + ".json", getIndice);
+    }
+
+});
+/*******************************************************************/
+
+/**************************** VER MÁS ****************************/
+
+// Evento Aspa de Card
+jQuery(document).on("click", ".cardClose a", function(event) {
+    event.preventDefault();
+    current_section = jQuery(this).closest('section'); // Para saber en qué sección estoy si hay más de una en la misma página (para coger offset, tipo, etc.)
+    var current_card = jQuery(this).closest('.shortcode_card').parent();
+
+    // Elimino la card pulsada
+    current_card.remove();
+
+    // Reasigno clases de las cards
+    var cards = jQuery(current_section).find('.partial_cardsGrid > .row').children();
+    cards.each(function(index, card) {
+        index_aux = index + 1;
+        /*var clase_div = (index_aux % 3 == 0) ? 'col-md-12' : 'col-md-6';
+        var clase_article = (index_aux % 3 == 0) ? 'shortcode_card f_4x1' : 'shortcode_card f_2x2';
+        if (index_aux % 6 == 0) clase_article += ' img_izq';
+        else if (index_aux % 3 == 0) clase_article += ' img_dcha';*/
+        
+        let position = index_aux % 5;        
+        var clase_div = (1 === position || 2 === position) ? 'col-md-6 col-xs-12' : 'col-lg-4 col-md-12';
+        var clase_article = (1 === position || 2 === position) ? 'shortcode_card f_2x1 card_medium' : 'shortcode_card f_1x1 card_medium';
+        
+        jQuery(card).attr('class', clase_div);
+        jQuery(card).children('article').attr('class', clase_article);
+        jQuery(card).show();
+    });
+
+    var orden_cards = jQuery(current_section).find('#orden').val(); // order o ID de taxonomía
+
+    // Muestro una card más
+    if (orden_cards == "especiales") {
+        var offset = parseInt(jQuery(current_section).find("#offset").val());
+        loop(offset, offset + 1, especiales);
+    } else if (orden_cards == "salesforce") {
+        var offset = parseInt(jQuery(current_section).find("#offset").val());
+        loop(offset, offset + 1, salesforceHomePosts);
+    } else if (jQuery(current_section).hasClass('geolocation')) {
+        var offset = parseInt(jQuery(current_section).find("#offset").val());
+        loop(offset, offset + 1, geolocationHomePosts);
+    } else if (jQuery('.lista_masrecientes li a.active i').attr('class') == 'icon-nav_visualize') {
+        // más populares
+        indice_aux = [];
+        var offset = parseInt(jQuery(current_section).find("#offset").val());
+        loop(offset, offset + 1, mas_populares);
+    } else {
+        var tipo = jQuery(current_section).find('#tipo').val(); // Tipo de post a traer (de momento siempre publicacion)
+        var subpath = jQuery(current_section).find('#subpath').val(); // Carpeta en la que busco la lista
+        var path = "/wp-content/uploads/json/" + subpath + '/';
+        jQuery.getJSON(path + orden_cards + ".json", function(indice) {
+            var offset = parseInt(jQuery(current_section).find("#offset").val());
+            loop(offset, offset + 1, indice);
+        });
+    }
+});
+
+var ver_mas;
+// Evento Ver más
+jQuery(document).on("click", "#cardVermas a", function(event) {
+    event.preventDefault();
+    current_section = jQuery(this).closest('section'); // Para saber en qué sección estoy si hay más de una en la misma página (para coger offset, tipo, etc.)
+    var tipo = jQuery(this).closest('section').find('#tipo').val(); // Tipo de post a traer (de momento siempre publicacion)
+    var subpath = jQuery(this).closest('section').find('#subpath').val(); // Carpeta en la que busco la lista
+    var orden_cards = jQuery(this).closest('section').find('#orden').val(); // order o ID de taxonomía
+    var path = "/wp-content/uploads/json/" + subpath + '/';
+    ver_mas = this;
+    if (orden_cards == "especiales") {
+        getIndice(especiales);
+    } else if (orden_cards == "salesforce") {
+        getIndice(salesforceHomePosts);
+    } else if (jQuery(current_section).hasClass('geolocation')) {
+        getIndice(geolocationHomePosts);
+    } else if (jQuery('.lista_masrecientes li a.active i').attr('class') == 'icon-nav_visualize') {
+        // más populares
+        var mostrar = parseInt(jQuery(current_section).find("#mostrar").val());
+        var offset = parseInt(jQuery(current_section).find("#offset").val());
+        loop(offset, mostrar + offset, mas_populares);
+    } else {
+        jQuery.getJSON(path + orden_cards + ".json", getIndice).error(noHayMasPublicaciones);
+    }
+});
+
+// No existen mas publicaciones o no existe el json
+function noHayMasPublicaciones() {
+    jQuery(ver_mas).find("a").html(object_name.no_existen_publicaciones);
+    jQuery(ver_mas).find("a").css("pointer-events", "none");
+    jQuery(ver_mas).find("a").blur();
+    var grid_de_cards = jQuery(current_section).find('.partial_cardsGrid > .row');
+    var numero_de_cards = grid_de_cards.children().length;
+    if (numero_de_cards == 0) {
+        grid_de_cards.append('<p class="page_text">' + object_name.no_existen_publicaciones + '</p>');
+    } else {
+        jQuery(ver_mas).remove();
+        // Para eliminar los eventos del enlace dentro de #cardVermas y poder utilizar el enlace a página normalmente 
+        jQuery(document).find(current_section).find('#cardVermas a').off();
+        jQuery(document).find(current_section).find('#cardVermas').removeAttr('id');
+        if (jQuery(document).find(current_section).find('.limitePubs')) {
+            jQuery(document).find(current_section).find('.limitePubs').show();
+        }
+    }
+    ver_mas = null;
+}
+
+// Obtener indice
+function getIndice(indice, callbackFunc) {
+    var inicio = parseInt(jQuery(current_section).find("#inicio").val());
+    var offset = parseInt(jQuery(current_section).find("#offset").val());
+    var mostrar = parseInt(jQuery(current_section).find("#mostrar").val());
+    var fin = 0;
+
+    if (offset == inicio) {
+        fin = inicio + mostrar;
+    } else {
+        fin = offset + mostrar;
+    }
+
+    loop(offset, fin, indice, callbackFunc);
+}
+
+function loop(i, fin, indice, callbackFunc) {
+    if (i >= indice.length || i >= fin) {
+        //base case
+        if (i >= indice.length) {
+            /*if(typeof callbackFunc != 'function') {
+                noHayMasPublicaciones();
+            }*/
+            noHayMasPublicaciones();
+        } else {
+            jQuery(current_section).find('.cardVermas a').show();
+        }
+        jQuery(current_section).find("#offset").val(i);
+        if ((jQuery(current_section).hasClass('geolocation') && i >= 15) ||
+            (jQuery(current_section).hasClass('salesforce') && i >= 15) ||
+            (jQuery(current_section).hasClass('cms') && i >= 45)) {
+            jQuery(ver_mas).remove();
+            // Para eliminar los eventos del enlace dentro de #cardVermas y poder utilizar el enlace a página normalmente 
+            jQuery(document).find(current_section).find('#cardVermas a').off();
+            jQuery(document).find(current_section).find('#cardVermas').removeAttr('id');
+            jQuery(document).find(current_section).find('.limitePubs').show();
+        }
+        if (typeof callbackFunc == 'function') {
+            callbackFunc(); // Se utiliza para borrar las cards de CMS que ya hay en Salesofrce o Geolocation en la Home
+        }
+    } else {
+        var tipo = jQuery(current_section).find("#tipo").val();
+        var orden_cards = jQuery(current_section).find("#orden").val();
+        var path = "/wp-content/uploads/json/" + tipo + "/";
+        pub_id = indice[i];
+        if (jQuery.isPlainObject(indice[i])) {
+            pub_id = indice[i].content_id;
+        }
+        jQuery.getJSON(path + pub_id + ".json", function(post) {
+            getPost(post);
+            loop(i + 1, fin, indice, callbackFunc);
+        }).error(function() {
+            loop(i + 1, fin + 1, indice, callbackFunc);
+        });
+    }
+}
+
+// HTML del post
+function getPost(post) {
+    var tamanio = jQuery("#tamanio").val(); // Tamaño de post
+
+    if (tamanio == "compacta") {
+        // HTML de la compacta
+        var html = '<div id="card-##ID##" data-fecha="##FECHA_ORDEN##" data-permalink="##URL_PUBLICACION##" class="col-md-4 col-xs-12 card-js" style="display:block;"><article class="shortcode_card f_1x1 card_small"><div class="shortcode_card_container"><div class="shortcode_card_container_hidden"><a href="##URL_PUBLICACION##" class="card_link"></a><div class="card_groupFoto"><figure class="cardFotoBg" style="background-image:url(\'##URL_IMAGEN##\')"></figure><div class="cardFotoMask"></div></div><div class="card_groupTitulo"><a href="##URL_PUBLICACION##"><p class="cardFecha"><i class="icon-bulletRectangle"></i>##FECHA##</p><h2 class="cardTitulo">##TITULO##</h2></a></div><div class="card_groupTexto"><span class="cardTexto">##RESUMEN##</span></div></div><div class="card_groupTools"> ##DOCUMENTOS_ASOCIADOS## <div class="toolsCompartir"><p class="texto_toolsCompartir"><a href="javascript:void(0);" title="##TITLE##" id="abrir_tooltip_compartirRRSS"><i class="icon-commu_share"></i><span class="textoIconoOcultar">' + object_name.compartir_rrss + '</span></a><a href="javascript:void(0);" title="' + object_name.otras_acciones + '" id="abrir_tooltip_otrosTools"><i class="icon-tools_configuration"></i><span class="textoIconoOcultar">' + object_name.otros_tools + '</span></a></p><div id="tooltip_compartirRRSS" class="tooltip_toolsRRSS" style="display: none;"><div class="tooltip_toolsRRSS_container"><ul class="lista_compartirRRSScolors"><li id="lista_item_facebook"><a href="##URL_SHARE_FACEBOOK##" target="_blank"><i class="icon-rrss_facebook2"></i><span class="iconTexto">Facebook</span></a></li><li id="lista_item_twitter"><a href="##URL_SHARE_TWITTER##" target="_blank"><i class="icon-rrss_twitter2"></i><span class="iconTexto">Twitter</span></a></li><li id="lista_item_linkedin"><a href="##URL_SHARE_LINKEDIN##" target="_blank"><i class="icon-rrss_linkedin2"></i><span class="iconTexto">Linkedin</span></a></li><li id="lista_item_whatsapp"><a href="##URL_SHARE_WHATSAPP##" target="_blank"><i class="icon-rrss_whatsapp2"></i><span class="iconTexto">Whatsapp</span></a></li><li id="lista_item_telegram"><a href="##URL_SHARE_TELEGRAM##" target="_blank"><i class="icon-rrss_telegram2"></i><span class="iconTexto">Telegram</span></a></li></ul></div></div><div id="tooltip_otrosTools" class="tooltip_toolsOtros" style="display: none;"><div class="tooltip_toolsOtros_container"><ul class="lista_toolsOtros"><li id="lista_item_copyEnlace"><a href="javascript:void(0)" class="copy-to-clipboard" data-url="##URL_PUBLICACION##"><i class="icon-nav_link"></i><span class="iconTexto">' + object_name.copiar_enlace + '</span></a></li><li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li><li id="lista_toolsOtros_item_comment"><a href="##URL_COMENTAR##"><i class="icon-commu_communication"></i><span>' + object_name.comentar + '</span></a></li></ul></div></div></div></div></div>##MODALES_DESCARGAS## ##MODALES_MULTIMEDIA##</article></div>';
+    } else {
+        // HTML de la card                                                                                                                                                       
+        var html = '<div id="card-##ID##" data-fecha="##FECHA_ORDEN##" data-permalink="##URL_PUBLICACION##" class="##CLASE_DIV## col-xs-12 card-js" style="display:block;"><article class="shortcode_card ##CLASE_ARTICLE## card_medium"><div class="shortcode_card_container"><div class="cardClose"><a title="' + object_name.eliminar_publicacion + '" href="javascript:void(0);"><i class="icon-nav_close"></i></a></div><div class="shortcode_card_container_hidden"><a href="##URL_PUBLICACION##" class="card_link"></a><div class="card_groupFoto"><a href="##URL_PUBLICACION##"><figure class="cardFotoBg" style="background-image:url(\'##URL_IMAGEN##\')"></figure><div class="cardFotoMask"></div></a></div><div class="card_groupTitulo"><a href="##URL_PUBLICACION##"><p class="cardFecha"><i class="icon-bulletRectangle"></i>##FECHA##</p><h3 class="cardTitulo">##TITULO##</h3></a></div><div class="card_groupTexto"><p class="cardTexto">##RESUMEN##</p></div></div><div class="card_groupLabels"><div class="partial_lista_etiquetas"><div class="lista_labels_group group_labels_geografia"><ul class="lista_labels"><li class="lista_itemTitulo">' + object_name.etiquetas_de_geografia + '</li>##LISTADO_GEOGRAFIAS##</ul></div><div class="lista_labels_group group_labels_tematica"><ul class="lista_labels"><li class="lista_itemTitulo">' + object_name.etiquetas_de_tematica + '</li>##LISTADO_TEMATICAS##</ul></div></div>##GEOGRAFIAS_POPUP## ##TEMATICAS_POPUP##</div><div class="card_groupTools">##DOCUMENTOS_ASOCIADOS##<div class="toolsCompartir"><p class="texto_toolsCompartir"><a href="javascript:void(0);" title="##TITLE##" id="abrir_tooltip_compartirRRSS"><i class="icon-commu_share"></i><span class="textoIconoOcultar">' + object_name.compartir_rrss + '</span></a><a href="javascript:void(0)" title="' + object_name.otras_acciones + '" id="abrir_tooltip_otrosTools"><i class="icon-tools_configuration"></i><span class="textoIconoOcultar">' + object_name.otros_tools + '</span></a></p><div id="tooltip_compartirRRSS" class="tooltip_toolsRRSS" style="display: none;"><div class="tooltip_toolsRRSS_container"><ul class="lista_compartirRRSScolors"><li id="lista_item_facebook"><a href="##URL_SHARE_FACEBOOK##" target="_blank"><i class="icon-rrss_facebook2"></i><span class="iconTexto">Facebook</span></a></li><li id="lista_item_twitter"><a href="##URL_SHARE_TWITTER##" target="_blank"><i class="icon-rrss_twitter2"></i><span class="iconTexto">Twitter</span></a></li><li id="lista_item_linkedin"><a href="##URL_SHARE_LINKEDIN##" target="_blank"><i class="icon-rrss_linkedin2"></i><span class="iconTexto">Linkedin</span></a></li><li id="lista_item_whatsapp"><a href="##URL_SHARE_WHATSAPP##" target="_blank"><i class="icon-rrss_whatsapp2"></i><span class="iconTexto">Whatsapp</span></a></li><li id="lista_item_telegram"><a href="##URL_SHARE_TELEGRAM##" target="_blank"><i class="icon-rrss_telegram2"></i><span class="iconTexto">Telegram</span></a></li></ul></div></div><div id="tooltip_otrosTools" class="tooltip_toolsOtros" style="display: none;"><div class="tooltip_toolsOtros_container"><ul class="lista_toolsOtros"><li id="lista_item_copyEnlace"><a href="javascript:void(0)" class="copy-to-clipboard" data-url="##URL_PUBLICACION##"><i class="icon-nav_link"></i><span class="iconTexto">' + object_name.copiar_enlace + '</span></a></li><li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li><li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li><li id="lista_item_comment"><a href="##URL_COMENTAR##"><i class="icon-commu_communication"></i><span>' + object_name.comentar + '</span></a></li></ul></div></div></div></div></div>##MODALES_DESCARGAS## ##MODALES_MULTIMEDIA##</article></div>';
+    }
+
+    // Idioma en el que estamos
+    var lang = '';
+    switch (jQuery('html').attr('lang')) {
+        case 'es':
+            lang = 'es';
+            break;
+        case 'en':
+            lang = 'en';
+            break;
+        default:
+            lang = 'en';
+    }
+
+    /**
+    ##CLASE_DIV##
+    ##CLASE_ARTICLE##
+    ##URL_IMAGEN##
+    ##FECHA##
+    ##URL_PUBLICACION##
+    ##TITULO##
+    ##RESUMEN##
+    ##URL_SHARE_TWITTER##
+    ##URL_SHARE_LINKEDIN##
+    ##URL_SHARE_GOOGLE_PLUS##
+    ##URL_COMENTAR##
+    ##LISTADO_GEOGRAFIAS##
+    ##LISTADO_TEMATICAS##
+    ##GEOGRAFIAS_POPUP##
+    ##TEMATICAS_POPUP##
+    ##DOCUMENTOS_ASOCIADOS##
+    ##MODALES_DESCARGAS##
+    ##MODALES_MULTIMEDIA##
+    */
+
+    var grid_de_cards = jQuery(current_section).find('.partial_cardsGrid > .row');
+    var numero_de_cards = grid_de_cards.children().length;
+    var nuevo_numero_de_cards = numero_de_cards + 1;
+
+
+    if (jQuery(current_section).hasClass('salesforce') && typeof salesforceHomePosts !== 'undefined') {
+        // Para que empiece por la card extendida
+        if (salesforceHomePosts.length == 1) {
+            nuevo_numero_de_cards = nuevo_numero_de_cards + 5; // Más el 1 de antes, empieza en la sexta (la card extendida con imagen a la izquierda) 
+        } else if (salesforceHomePosts.length == 4) {
+            nuevo_numero_de_cards = nuevo_numero_de_cards + 2; // Más el 1 de antes, empieza en la tercera (la card extendida con imagen a la derecha) 
+        }
+    }
+
+    if (jQuery(current_section).hasClass('geolocation') && typeof geolocationHomePosts !== 'undefined') {
+        // Para que empiece por la card extendida
+        if (geolocationHomePosts.length == 1) {
+            nuevo_numero_de_cards = nuevo_numero_de_cards + 5; // Más el 1 de antes, empieza en la sexta (la card extendida con imagen a la izquierda) 
+        } else if (geolocationHomePosts.length == 4) {
+            nuevo_numero_de_cards = nuevo_numero_de_cards + 2; // Más el 1 de antes, empieza en la tercera (la card extendida con imagen a la derecha) 
+        }
+    }
+
+    let shortened_data = false;
+    
+    if (tamanio != "compacta") {    
+        let position = nuevo_numero_de_cards % 5;
+        
+        if ( 1 === position || 2 === position ) {
+            var clase_div = 'col-md-6 col-xs-12';
+            var clase_article = 'f_2x1';
+        }
+        else {
+            var clase_div = 'col-lg-4 col-md-12';
+            var clase_article = 'f_1x1';
+            shortened_data = true;
+        }
+    }
+
+    var url_imagen = post.image;
+    var fecha = timeConverter(post.date, lang);
+    var url_publicacion = post.url[lang];
+    var titulo = post.title[lang];
+    titulo = (titulo.length > 90) ? titulo.substr(0, 89) + '…' : titulo;
+    var resumen = post.excerpt[lang];
+    resumen = (resumen.length > 325) ? resumen.substr(0, 324) + '…' : resumen;
+    var url_share_facebook      = post.share.facebook ? post.share.facebook[lang] : "javascript:void(0)";
+    var url_share_twitter       = post.share.twitter ? post.share.twitter[lang] : "javascript:void(0)";
+    var url_share_linkedin      = post.share.linkedin ? post.share.linkedin[lang] : "javascript:void(0)";
+    var url_share_whatsapp      = post.share.whatsapp ? post.share.whatsapp[lang] : "javascript:void(0)";
+    var url_share_telegram      = post.share.telegram ? post.share.telegram[lang] : "javascript:void(0)";
+    
+    // Fix para evitar error al compartir en Telegram desde IOS
+    url_share_telegram = sanitizeTelegramURL(url_share_telegram, titulo);
+    
+    //var url_share_google_plus = post.share.google_plus[lang];
+    var url_comentar = post.url_comentar[lang];
+    // Cojo el ancho de las cards del cms, que ya están en el HTML
+    var cardsIguales = jQuery('[id^=card-].' + clase_div);
+    var cardWidth = (shortened_data) ? 350 : 540;
+    cardWidth = (isMobile()) ? 280 : cardWidth;
+    if (cardsIguales.length > 0) {
+        cardWidth = jQuery(cardsIguales).last().width();
+    }
+    if (cardWidth == null) {
+        cardWidth = jQuery('.partial_cardsGrid .row').width() / 2;
+    }
+    var listado_geografias = get_terms_li(post.geography, 'geografia', cardWidth);
+    var listado_tematicas = get_terms_li(post.topic, 'tematica', cardWidth);
+    var geografias_popup = get_terms_popup(post.geography, 'geografia', cardWidth);
+    var tematicas_popup = get_terms_popup(post.topic, 'tematica', cardWidth);
+    var documentos_asociados = get_documentos_asociados_div(post.id, post.attachments);
+    var modales_descargas = get_modales_descargas_div(post.id, titulo, post.url['es'], post.attachments, lang, fecha);
+    var modales_multimedia = '';
+    
+    if (!multimedia_modals.includes(post.id)) {
+        modales_multimedia = get_modales_multimedia_div(post.id, titulo, post.url['es'], post.attachments, lang, fecha);
+        
+        if (modales_multimedia.length > 0) {
+            multimedia_modals.push(post.id);
+        }
+    }
+
+    if (shortened_data) {
+        titulo = (titulo.length > 55) ? titulo.substr(0, 54) + '…' : titulo;
+        resumen = (resumen.length > 245) ? resumen.substr(0, 244) + '…' : resumen;
+    }   
+
+    html = html.replace('##CLASE_DIV##', clase_div);
+    html = html.replace('##CLASE_ARTICLE##', clase_article);
+    html = html.replace('##URL_IMAGEN##', url_imagen);
+    html = html.replace('##FECHA##', fecha);
+    html = html.replace(/##URL_PUBLICACION##/g, url_publicacion);
+    html = html.replace('##TITULO##', titulo);
+    html = html.replace('##RESUMEN##', resumen);
+    
+    if ('javascript:void(0)' === url_share_facebook) {
+        html = html.replace('href="##URL_SHARE_FACEBOOK##" target="_blank"', 'href="##URL_SHARE_FACEBOOK##"');
+    }
+    html = html.replace('##URL_SHARE_FACEBOOK##', url_share_facebook);
+    
+    if ('javascript:void(0)' === url_share_twitter) {
+        html = html.replace('href="##URL_SHARE_TWITTER##" target="_blank"', 'href="##URL_SHARE_TWITTER##"');
+    }
+    html = html.replace('##URL_SHARE_TWITTER##', url_share_twitter);
+    
+    if ('javascript:void(0)' === url_share_linkedin) {
+        html = html.replace('href="##URL_SHARE_LINKEDIN##" target="_blank"', 'href="##URL_SHARE_LINKEDIN##"');
+    }
+    html = html.replace('##URL_SHARE_LINKEDIN##', url_share_linkedin);
+    
+    if ('javascript:void(0)' === url_share_whatsapp) {
+        html = html.replace('href="##URL_SHARE_WHATSAPP##" target="_blank"', 'href="##URL_SHARE_WHATSAPP##"');
+    }
+    html = html.replace('##URL_SHARE_WHATSAPP##', url_share_whatsapp);
+    
+    if ('javascript:void(0)' === url_share_telegram) {
+        html = html.replace('href="##URL_SHARE_TELEGRAM##" target="_blank"', 'href="##URL_SHARE_TELEGRAM##"');
+    }
+    html = html.replace('##URL_SHARE_TELEGRAM##', url_share_telegram);
+    
+    //html = html.replace('##URL_SHARE_GOOGLE_PLUS##', url_share_google_plus);
+    html = html.replace('##URL_COMENTAR##', url_comentar);
+    html = html.replace('##LISTADO_GEOGRAFIAS##', listado_geografias);
+    html = html.replace('##LISTADO_TEMATICAS##', listado_tematicas);
+    html = html.replace('##TEMATICAS_POPUP##', tematicas_popup);
+    html = html.replace('##GEOGRAFIAS_POPUP##', geografias_popup);
+    html = html.replace('##DOCUMENTOS_ASOCIADOS##', documentos_asociados);
+    html = html.replace('##MODALES_DESCARGAS##', modales_descargas);
+    html = html.replace('##MODALES_MULTIMEDIA##', modales_multimedia);
+    var title_compartir = object_name.compartir_en_redes_sociales;
+    html = html.replace('##TITLE##', title_compartir);
+
+    var date = new Date(post.date * 1000);
+
+    html = html.replace('##ID##', post.id);
+    html = html.replace('##FECHA_ORDEN##', date.toISOString().substr(0, 10));
+    
+    grid_de_cards.append(html);
+
+    if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+        BbvaComponent.getUserLogged(function(err, user) { // cargamos al usuario logado en nuestra aplicación
+            if (!err) {
+                custom_json = user.get('custom');
+
+                if (typeof custom_json == 'string')
+                    custom_json = JSON.parse(custom_json);
+
+                if ("undefined" == typeof custom_json["listalectura"]) {
+                    custom_json["listalectura"] = {};
+                    custom_json["listalectura"]["leerluego"] = [];
+                    custom_json["listalectura"]["mibiblioteca"] = [];
+
+                    user.set('custom', custom_json);
+
+                    user.update(function(err) {
+                        //console.log("inicializado lista lectura");
+                    });
+                }
+
+                var leerluego = custom_json["listalectura"]["leerluego"];
+                var mibiblioteca = custom_json["listalectura"]["mibiblioteca"];
+
+                var id = post.id;
+                jQuery('#card-' + id).each(function(index) {
+                    if (isItemInArray(id, leerluego)) {
+                        jQuery("#card-" + id + " #lista_item_addlist").remove();
+                        jQuery("#card-" + id + " #lista_item_addlistBiblioteca").remove();
+                        jQuery("#card-" + id + " #lista_item_removelist").remove();
+                        jQuery("#card-" + id + " #lista_item_removelistBiblioteca").remove();
+                        
+                        jQuery("#card-" + id + " #lista_item_copyEnlace").after('<li id="lista_item_removelist"><a href="javascript:void(0)"><i class="icon-listaLectura_remove"></i><span>' + object_name.eliminar_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        jQuery("#card-" + id + " #lista_item_comment").before('<li id="lista_item_addlistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_add"></i><span>' + object_name.anadir_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                    } else if (isItemInArray(id, mibiblioteca)) {
+                        jQuery("#card-" + id + " #lista_item_addlist").remove();
+                        jQuery("#card-" + id + " #lista_item_addlistBiblioteca").remove();
+                        jQuery("#card-" + id + " #lista_item_removelist").remove();
+                        jQuery("#card-" + id + " #lista_item_removelistBiblioteca").remove();
+                        
+                        jQuery("#card-" + id + " #lista_item_copyEnlace").after('<li id="lista_item_addlist"><a href="javascript:void(0)"><i class="icon-listaLectura_add"></i><span>' + object_name.anadir_lista_lectura.replace(/"/g, '&#34;') + '</span></a></li>');
+                        jQuery("#card-" + id + " #lista_item_comment").before('<li id="lista_item_removelistBiblioteca"><a href="javascript:void(0)"><i class="icon-biblioteca_remove"></i><span class="iconTexto">' + object_name.eliminar_mi_biblioteca.replace(/"/g, '&#34;') + '</span></a></li>');
+                    }
+                });
+            }
+        });
+    }
+}
+
+function get_terms_li(term_ids, taxonomia, cardWidth) {
+    var listado = '';
+    var num_max_chars = 60;
+    if (cardWidth >= 370) {
+        num_max_chars = 60;
+    } else if (cardWidth >= 337) {
+        num_max_chars = 40;
+    } else if (cardWidth >= 297) {
+        num_max_chars = 33;
+    } else {
+        num_max_chars = 30;
+    }
+    
+    var num_chars = 0;
+    for (var i = 0; i < term_ids.length; i++) {
+        var term_id = term_ids[i];
+        if (typeof terms_names[term_id] !== "undefined") {
+            num_chars += 3;
+            num_chars += terms_names[term_id].length;
+            if (num_chars < num_max_chars) {
+                listado += '<li class=""><a href="' + terms_slugs[term_id] + '">' + terms_names[term_id] + '</a></li>';
+            } else {
+                listado += '<li class="itemList_tooltipAllLabel group_' + taxonomia + '"><a href="javascript:void(0);"> ... </a></li>';
+                break;
+            }
+        }
+    }
+    return listado;
+}
+
+function get_terms_popup(term_ids, taxonomia, cardWidth) {
+    var listado = '';
+    var num_max_chars = 60;
+    if (cardWidth >= 370) {
+        num_max_chars = 60;
+    } else if (cardWidth >= 337) {
+        num_max_chars = 40;
+    } else if (cardWidth >= 297) {
+        num_max_chars = 33;
+    } else {
+        num_max_chars = 30;
+    }
+    
+    var num_chars = 0;
+    var terms_popup = [];
+    for (var i = 0; i < term_ids.length; i++) {
+        var term_id = term_ids[i];
+        if (typeof terms_names[term_id] !== "undefined") {
+            num_chars += 3;
+            num_chars += terms_names[term_id].length;
+            if (num_chars >= num_max_chars) {
+                terms_popup.push(term_id);
+            }
+        }
+    }
+    if (terms_popup.length > 0) {
+        listado += '<div id="" class="tooltip_allLabels tooltip_group_' + taxonomia + '"> <div class="tooltip_allLabels_container"><div class="partial_lista_etiquetas"><div class="lista_labels_group tooltip_group_' + taxonomia + '"><ul class="lista_labels"><li class="lista_itemTitulo">' + object_name.etiquetas_de_tematica + '</li>';
+        for (var i = terms_popup.length - 1; i >= 0; i--) {
+            var term_id = terms_popup[i];
+            listado += '<li class=""><a href="' + terms_slugs[term_id] + '">' + terms_names[term_id] + '</a></li>';
+        }
+        listado += '</ul></div></div></div></div>';
+    }
+    return listado;
+}
+
+function get_documentos_asociados_div(post_id, attachments) {
+    var html_attachments = '';
+
+    var documents = attachments.documents;
+    var videos = attachments.videos;
+    var podcasts = (undefined === attachments.podcasts) ? [] : attachments.podcasts;
+
+    if (podcasts.length > 0 || documents.length > 0 || videos.length > 0) {
+        html_attachments += '<div class="toolsDescargas"><div class="partial_lista_downloadArch"><ul class="lista_downloadArch">';
+
+        if (documents.length > 0) {
+            html_attachments += '<li class="lista_itemTitulo">' + object_name.tipos_de_descargas + '</li><li title="' + object_name.descargar_docs + '"><a href="javascript:void(0)" data-toggle="modal" data-target="#modalDescargas_publicaciones_' + post_id + '"></span><i class="icon-tools_download"></i><span class="textoIconoOcultar">' + object_name.archivos + '</span></a></li>';
+        }
+        
+        if (Object.keys(podcasts).length > 0 || videos.length > 0) {
+            let multimedia_modal_link = document.getElementById('multimedia_modal_link_html').innerHTML;
+            let total = videos.length + Object.keys(podcasts).length;
+            
+            if (total === 1) {
+                let type = ( videos.length === 0 ) ? 'Audio' : 'Video';
+                multimedia_modal_link = multimedia_modal_link.replace(/modalDescarga_multimedia_/g, 'modal_visualizar' + type + '_small_');
+                multimedia_modal_link = multimedia_modal_link.replace(/##PLAYER_LAUNCHER##/g, 'player-launcher');
+
+                if (type === 'Video') {
+                    let video_id   = 'youtube_' + post_id + '_' + getYoutubeIdFromUrl(videos[0].url) + '_js';
+                    multimedia_modal_link = multimedia_modal_link.replace(/class="player-launcher"/g, 'title="' + object_name.ver_video + '" class="player-launcher" data-video-id="' + video_id + '"');
+                }
+                else {
+                    multimedia_modal_link = multimedia_modal_link.replace(/class="player-launcher"/g, 'title="' + object_name.escuchar_podcast + '" class="player-launcher podcast-launcher"');
+                }
+            }
+            else {
+                multimedia_modal_link = multimedia_modal_link.replace(/class="##PLAYER_LAUNCHER##"/g, 'title="' + object_name.ver_lista_archivos_multimedia + '" ');
+            }
+            
+            multimedia_modal_link = multimedia_modal_link.replace(/##PUB_ID##/g, post_id);
+            multimedia_modal_link = multimedia_modal_link.replace(/##ARCHIVOS_MULTIMEDIA_TEXT##/g, object_name.archivos_multimedia);
+            
+            html_attachments += multimedia_modal_link;
+        }
+
+        html_attachments += '</ul></div></div>';
+    }
+    else {
+        html_attachments = '<div class="toolsDescargas"></div>';
+    }
+    
+    html_attachments = html_attachments.replace(/_##JS##/g, '_js');
+
+    return html_attachments;
+}
+
+function getYoutubeIdFromUrl(url) {
+    var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    var match = url.match(regExp);
+
+    if (match && match[2].length == 11) {
+        return match[2];
+    } else {
+        return 'error';
+    }
+}
+
+function get_modales_multimedia_div(post_id, titulo, url_publicacion, attachments, lang, fecha_pub) {    
+    let multimedia_modal_html = '';
+    let podcasts = (undefined === attachments.podcasts) ? {} : attachments.podcasts;
+    let videos = attachments.videos;    
+    let one_player = (videos.length + Object.keys(podcasts).length === 1);
+    
+    // Limpiamos lista de players para cada modal
+    player_modals = [];
+    
+    if (videos.length > 0 || Object.keys(podcasts).length > 0) {
+        multimedia_modal_html = document.getElementById('multimedia_modal').innerHTML;
+        
+        multimedia_modal_html = multimedia_modal_html.replace(/##PODCAST_ASSETS_URL##/g, podcast_assets_url);
+        multimedia_modal_html = multimedia_modal_html.replace(/##PUB_ID##/g, post_id);
+        multimedia_modal_html = multimedia_modal_html.replace(/##PUB_TITLE##/g, titulo);
+        multimedia_modal_html = multimedia_modal_html.replace(/##ARCHIVOS_MULTIMEDIA_TEXT##/g, object_name.archivos_multimedia);
+        multimedia_modal_html = multimedia_modal_html.replace(/##SELECCIONAR_ARCHIVOS_REPRODUCIR_TEXT##/g, object_name.seleccion_multimedia);
+        
+        let multimedia_items_html = get_modales_multimedia_items(post_id, lang, videos, podcasts, fecha_pub, one_player);
+        multimedia_modal_html = multimedia_modal_html.replace(/##MULTIMEDIA_ITEMS##/g, multimedia_items_html);
+        multimedia_modal_html = multimedia_modal_html.replace(/##CANCELAR_TEXT##/g, object_name.cancelar);
+        multimedia_modal_html = multimedia_modal_html.replace(/##CERRAR_TEXT##/g, object_name.cerrar);
+        
+        if (one_player) {
+            // No se pinta modal multimedia
+            multimedia_modal_html = '';
+        }
+        
+        multimedia_modal_html += get_players_modals();
+    }
+    
+    multimedia_modal_html = multimedia_modal_html.replace(/_##JS##/g, '_js');
+
+    return multimedia_modal_html;
+}
+
+function get_modales_multimedia_items(post_id, lang, videos, podcasts, fecha_pub, one_player) {
+    let multimediaItemsHtml = '';
+    let itemHtml = '';
+    let multimediaModalId = 1;
+    let multimediaLists = {
+        video: videos,
+        podcast: podcasts
+    };
+    let multimediaTypes = Object.keys(multimediaLists);
+    let n = 0;
+    let sizeN = multimediaTypes.length;
+    let multimediaList = null;
+    let type = null;
+    let m = 0;
+    let sizeM = 0;
+    let multimediaTitle = null;
+    let multimediaDate = null;
+    let multimediaLang = null;
+    let multimediaUrl = null;
+    let multimediaItem = null;
+    let video_id = '';
+    
+    for (n = 0; n < sizeN; n++) {
+        type = multimediaTypes[n];
+        multimediaList = multimediaLists[type];
+        
+        if (Object.keys(multimediaList).length > 1) {
+            if ('video' === multimediaTypes[n]) {
+                multimediaList.sort(function(a, b) {
+                    return a.fecha-b.fecha;
+                }); 
+                
+                multimediaList = (0 === multimediaList.length) ? multimediaLists[type] : multimediaList;
+            }
+            else {
+                multimediaList = Object.values(multimediaList);
+                multimediaList.sort(function(a, b) {
+                    return a.date-b.date;
+                });            
+            }            
+        }
+        
+        sizeM = multimediaList.length;
+        
+        for (m = 0; m < sizeM; m++) {
+            itemHtml = document.getElementById('multimedia_modal_item_' + type).innerHTML;
+            
+            multimediaItem = multimediaList[m];
+            
+            if ('video' === type) {
+                multimediaUrl = multimediaItem.embed;
+
+                //Si no se ha aceptado la cookie de categoría C0003 cambiamos la url de youtube a youtube-nocookies
+                if (OnetrustActiveGroups.indexOf("C0003") == -1) {
+                    multimediaUrl = changeYoutubeUrlAYoutubeNOCookie(multimediaItem.embed);
+                };
+                
+                video_id = getYoutubeIdFromUrl(multimediaUrl);
+            }
+            else {
+                multimediaUrl = multimediaItem.url;
+            }
+            
+            itemHtml = itemHtml.replace(/##PUB_ID##/g, post_id);
+            
+            if ( one_player ) {
+                multimediaModalId = null;
+                itemHtml = itemHtml.replace(/_##MULTIMEDIA_MODAL_ID##/g, '');
+            }
+            else {
+                itemHtml = itemHtml.replace(/##MULTIMEDIA_MODAL_ID##/g, multimediaModalId);
+            }
+            
+            multimediaTitle = multimediaItem.title[lang];
+            multimediaLang = get_nombre_idioma(multimediaItem.language, lang);
+            multimediaDate = (undefined === multimediaItem.date) ? fecha_pub : timeConverter(multimediaItem.date, lang);
+            
+            itemHtml = itemHtml.replace(/##MULTIMEDIA_TITLE##/g, multimediaTitle);
+            itemHtml = itemHtml.replace(/##MULTIMEDIA_LANG##/g, multimediaLang);
+            itemHtml = itemHtml.replace(/##MULTIMEDIA_DATE##/g, multimediaDate);
+            
+            if ('video' === type) {
+                multimediaUrl += '&autoplay=1';
+                itemHtml = itemHtml.replace(/##VIDEO_ID##/g, video_id);
+                itemHtml = itemHtml.replace(/data-video-id="/g, 'data-video-id="youtube_');
+                itemHtml = itemHtml.replace(/##VER_VIDEO_TEXT##/g, object_name.ver_video);
+            }
+            else {
+                itemHtml = itemHtml.replace(/##ESCUCHAR_PODCAST_TEXT##/g, object_name.escuchar_podcast);
+            }
+            
+            multimediaItemsHtml += itemHtml;
+            
+            player_modals.push({
+                type: type,
+                pub_id: post_id,
+                multimedia: {
+                    title: multimediaTitle,
+                    date: multimediaDate,
+                    lang: multimediaLang,
+                    url: multimediaUrl,
+                    modal_id: multimediaModalId,
+                    video_id: video_id
+                }
+            });
+            
+            multimediaModalId++;
+        }
+    }
+    
+    return multimediaItemsHtml;
+}
+
+function get_players_modals() {
+    let playerModalsHtml = '';
+    let playerHtml = '';
+    let i = 0;
+    let size = player_modals.length;
+    let url = '';
+    
+    for (i = 0; i < size; i++) {        
+        playerHtml = document.getElementById('multimedia_player_' + player_modals[i].type).innerHTML;
+        playerHtml = playerHtml.replace(/##PUB_ID##/g, player_modals[i].pub_id);
+        
+        if (player_modals[i].multimedia.modal_id === null) {
+            playerHtml = playerHtml.replace(/_##MULTIMEDIA_MODAL_ID##/g, '');
+        }
+        else {
+            playerHtml = playerHtml.replace(/##MULTIMEDIA_MODAL_ID##/g, player_modals[i].multimedia.modal_id);
+        }
+        
+        playerHtml = playerHtml.replace(/##MULTIMEDIA_TITLE##/g, player_modals[i].multimedia.title);
+        
+        url = (player_modals[i].multimedia.url.indexOf('http') === -1) ? 'https:' + player_modals[i].multimedia.url : player_modals[i].multimedia.url;
+        playerHtml = playerHtml.replace(/##MULTIMEDIA_URL##/g, url);
+        
+        if ('video' === player_modals[i].type) {
+            playerHtml = playerHtml.replace(/##VIDEO_ID##/g, player_modals[i].multimedia.video_id);
+            playerHtml = playerHtml.replace(/##VIDEO_TEXT##/g, object_name.video);
+            playerHtml = playerHtml.replace(/##VIENDO_VIDEO_TEXT##/g, object_name.viendo_video);
+        }
+        else {
+            playerHtml = playerHtml.replace(/##PODCAST_TEXT##/g, object_name.podcast);
+            playerHtml = playerHtml.replace(/##ESCUCHANDO_PODCAST_TEXT##/g, object_name.escuchando_podcast);
+        }
+        
+        playerHtml = playerHtml.replace(/##CERRAR_TEXT##/g, object_name.cerrar);
+        
+        playerModalsHtml += playerHtml;
+    }
+        
+    return playerModalsHtml;
+}
+
+function get_modales_descargas_div(post_id, titulo, url_publicacion, attachments, lang, fecha_pub) {
+    var html_modales = '';
+
+    var documents = attachments.documents;
+    var audios = attachments.audios;
+    var videos = attachments.videos;
+
+    url_publicacion = url_publicacion.replace('http://', 'https://').replace('//edicion-', '//').replace('//revision-', ''); // Necesito la URL de PRO
+
+    if (documents.length > 0) {
+        html_modales += '<div class="modal fade modalDescargas modalDescarga_publicaciones modalDescarga_publicaciones-docs" id="modalDescargas_publicaciones_' + post_id + '" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><div class="container"><div class="row justify-content-end"><div class="col"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><i class="icon-nav_close"></i><span class="textoIconoOcultar" aria-hidden="true">' + object_name.cerrar_modal + '</span></button></div></div><div class="row"><div class="col"><img class="imagenModal" src="/wp-content/themes/bbvaresearch/images/component/modal/verified_document.svg"></div></div></div></div><div class="modal-body"><form class="form_descargaPublicaciones"><p class="publicacion_title">' + titulo + '</p><p class="publicacion_texto">' + object_name.seleccione_documentos + '.</p><div class="form_descargaPublicaciones_container' + (documents.length > 3 ? ' moreThanThreeOutline' : '') + '"><ul class="lista_archivos row">';
+        for (var i = 0; i < documents.length; i++) {
+            var documento = documents[i];
+            var tipo_contenido_nombre = terms_names[documento.content_type];
+            var formato_nombre = formats[documento.format].title;
+            var idioma_nombre = get_nombre_idioma(documento.language, lang);
+
+            var icono_clase = '';
+            switch (tipo_contenido_nombre) {
+                case "Audio":
+                    icono_clase = "icon-commu_audio";
+                    break;
+                case "Datos":
+                case "Data":
+                    icono_clase = "icon-tools_graphics";
+                    break;
+                case "Infografía":
+                case "Infographics":
+                    icono_clase = "icon-others_furniture";
+                    break;
+                case "Informe":
+                case "Report":
+                    icono_clase = "icon-commu_press";
+                    break;
+                case "Presentación":
+                case "Presentation":
+                    icono_clase = "icon-tools_tv";
+                    break;
+                case "Vídeo":
+                case "Video":
+                    icono_clase = "icon-commu_play";
+                    break;
+                case "Metodología":
+                case "Methodology":
+                    icono_clase = "icon-tools_filter";
+                    break;
+                case "Nota":
+                case "Note":
+                    icono_clase = "icon-tools_addnotes";
+                    break;
+                case "Glosario":
+                case "Glossary":
+                    icono_clase = "icon-tools_consult";
+                    break;
+                case "Abstract":
+                    icono_clase = "icon-nav_menu";
+                    break;
+                case "Libro":
+                case "Book":
+                    icono_clase = "icon-biblioteca_remove";
+                    break;
+                case "Otros":
+                case "Others":
+                default:
+                    icono_clase = "icon-tools_document";
+            }
+
+            var fecha_documento = '';
+            if (typeof documento.date !== 'undefined' && documento.date != '') {
+                fecha_documento = timeConverter(documento.date, lang);
+            } else {
+                // Si no tenemos fecha del documento ponemos la fecha de publicación de la publicación
+                fecha_documento = fecha_pub;
+            }
+            html_modales += '<li class="list-item"><div class="publicacion_datosArchivos"><div class="formGroup_checkbox bggrey"><input id="tiposFormatosDescarga_pdf-' + post_id + '-' + i + '" name="documentos[' + i + ']" class="formCheckbox" value="' + documento.url + '" type="checkbox"><label class="formCheckboxLabel" for="tiposFormatosDescarga_pdf-' + post_id + '-' + i + '"><i class="' + icono_clase +'"></i><span class="publicacion_tipoArchivos">' + tipo_contenido_nombre + ' (' + formato_nombre + ')</span></label></div><span class="publicacion_nombreArchivos">' + documento.title + '</span><span class="publicacion_idiomaArchivos">' + idioma_nombre + '</span><span class="publicacion_fechaActualizacionArchivos">' + fecha_documento + '</span></div><div class="publicacion_toolsArchivos"><ul class="list_toolsArchivos"><li class="toolsArchivos toolsCopylink"><a href="javascript:void(0)" class="copy-to-clipboard" data-url="' + documento.url + '"><i class="icon-nav_link"></i> <span class="textoIcono">' + object_name.copiar_enlace + '</span></a></li></ul></div></li>';
+        }
+        html_modales += '</ul></div><div class="publicacion_botones"><div class="form_botones"><button type="button" class="boton" data-thread-es="' + url_publicacion + '" data-id="' + post_id + '">' + object_name.descargar + '</button><a href="#" class="boton_link" data-dismiss="modal" aria-label="Close">' + object_name.cancelar + '</a></div></div></form></div></div></div></div>';
+    }
+    
+    /*if (audios.length > 0) {
+        html_modales += '<div class="modal fade modalDescargas modalDescarga_publicaciones" id="modalDescargas_audios_' + post_id + '" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">' + object_name.reproduccion_audios + '</h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><i class="icon-nav_close"></i><span class="textoIconoOcultar" aria-hidden="true">' + object_name.cerrar_modal + '</span></button></div><div class="modal-body"><form class="form_descargaPublicaciones"><p class="publicacion_title">' + titulo + '</p><p class="publicacion_texto">' + object_name.seleccione_audios + '</p>';
+        for (var i = 0; i < audios.length; i++) {
+            var audio = audios[i];
+            var titulo_audio = audio.title[lang];
+            var idioma_nombre = get_nombre_idioma(audio.language, lang);
+            var volver = '';
+            if (audios.length != 1) {
+                volver += '<i class="icon-nav_arrowLeft"></i>' + object_name.volver;
+            }
+            html_modales += '<div class="publicacion_group"><div class="publicacion_tipoArchivos_title"><i class="icon-bulletRectangle"></i><a href="" class="publicacion_tipoArchivos_title_link">' + titulo_audio + '</a></div><div class="publicacion_tipoArchivos">' + idioma_nombre + '</div><div class="publicacion_tipoArchivos_detalle"><div class="publicacion_tipoArchivos_detalle_back"><a href="" class="publicacion_tipoArchivos_detalle_backLink">' + volver + '</a></div>' + audio.code + '</div></div>';
+        }
+
+        html_modales += '</form></div></div></div></div>';
+    }
+
+    if (videos.length > 0) {
+        html_modales += '<div class="modal fade modalDescargas modalDescarga_publicaciones" id="modalDescargas_videos_' + post_id + '" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-video" role="document"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">' + object_name.reproduccion_videos + '</h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><i class="icon-nav_close"></i><span class="textoIconoOcultar" aria-hidden="true">' + object_name.cerrar_modal + '</span></button></div><div class="modal-body"><form class="form_descargaPublicaciones"><p class="publicacion_title">' + titulo + '</p><p class="publicacion_texto">' + object_name.seleccione_videos + '</p>';
+
+        for (var i = 0; i < videos.length; i++) {
+            var video = videos[i];
+            var titulo_video = video.title[lang];
+            var idioma_nombre = get_nombre_idioma(video.language, lang);
+            var texto_idiomas = idioma_nombre;
+            var video_embed = video.embed;
+
+			//Si no se ha aceptado la cookie de categoría C0003 cambiamos la url de youtube a youtube-nocookies
+            if (OnetrustActiveGroups.indexOf("C0003") == -1) {
+                   video_embed = changeYoutubeUrlAYoutubeNOCookie(video.embed);
+            }
+
+            if (video.sub_language != null && video.sub_language.length > 0) {
+                texto_idiomas += ' | Sub ' + video.sub_language.join(', ');
+            }
+
+            var volver = '';
+            if (videos.length != 1) {
+                volver += '<i class="icon-nav_arrowLeft"></i>' + object_name.volver;
+            }
+
+            html_modales += '<div class="publicacion_group"><div class="publicacion_tipoArchivos_title"><i class="icon-bulletRectangle"></i><a href="javascript:void(0);" class="publicacion_tipoArchivos_title_link videolink__wrapper">' + titulo_video + '</a></div><div class="publicacion_tipoArchivos">' + texto_idiomas + '</div><div class="publicacion_tipoArchivos_detalle"><div class="publicacion_tipoArchivos_detalle_back"><a href="" class="publicacion_tipoArchivos_detalle_backLink">' + volver + '</a></div><div class="iframe-container"><iframe width="850" height="480" id="' + getYoutubeIdFromUrl(video_embed) + '" src="' + video_embed + '" frameborder="0" allowfullscreen></iframe></div></div></div>';
+        }
+
+        html_modales += '</form></div></div></div></div>';
+    }*/
+
+
+    return html_modales;
+}
+
+function get_nombre_idioma(id_idioma, current_lang) {
+    idiomas = {
+        'es': {
+            'es': 'Español',
+            'en': 'Inglés',
+            'eu': 'Euskera',
+            'ca': 'Catalán',
+            'pt': 'Portugués',
+            'zh': 'Chino',
+            'ja': 'Japonés',
+            'tr': 'Turco'
+        },
+        'en': {
+            'es': 'Spanish',
+            'en': 'English',
+            'eu': 'Basque',
+            'ca': 'Catalan',
+            'pt': 'Portuguese',
+            'zh': 'Chinese',
+            'ja': 'Japanese',
+            'tr': 'Turkish'
+        }
+    };
+    return idiomas[current_lang][id_idioma];
+}
+
+function timeConverter(UNIX_timestamp, lang) {
+    var a = new Date(UNIX_timestamp * 1000);
+    var months = [];
+    if (lang == 'es') {
+        months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    } else {
+        months = ['January', 'February', 'March', 'April', 'May', 'Jun', 'July', 'August', 'September', 'October', 'November', 'December'];
+    }
+    var year = a.getFullYear();
+    var month = months[a.getMonth()];
+    var date = a.getDate();
+    var hour = a.getHours();
+    var min = a.getMinutes();
+    var sec = a.getSeconds();
+    if (lang == 'es') {
+        var time = date + ' ' + month + ' ' + year;
+    } else {
+        var time = month + ' ' + date + ', ' + year;
+    }
+    return time;
+}
+
+function timeConverterWithOf(UNIX_timestamp, lang) {
+    var a = new Date(UNIX_timestamp * 1000);
+    var months = [];
+    if (lang == 'es') {
+        months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    } else {
+        months = ['January', 'February', 'March', 'April', 'May', 'Jun', 'July', 'August', 'September', 'October', 'November', 'December'];
+    }
+    var year = a.getFullYear();
+    var month = months[a.getMonth()];
+    var date = a.getDate();
+    var hour = a.getHours();
+    var min = a.getMinutes();
+    var sec = a.getSeconds();
+    if (lang == 'es') {
+        var time = date + ' de ' + month + ' ' + year;
+    } else {
+        var time = month + ' ' + date + ', ' + year;
+    }
+    return time;
+}
+
+/** END VER MÁS **/
+
+// En qué idioma estamos actualmente
+var lang = (jQuery('html').attr('lang') !== 'es') ? '/en/' : '/';
+
+// URLs necesarias para pintar el menú login
+var url_home = window.location.protocol + '//' + window.location.hostname + lang;
+var url_config = url_home + 'configcuenta/';
+var url_redirect = '#';
+if (pathname == lang + 'login/' || pathname == lang + 'reset/') {
+    var param_redirectUrl = null;
+    if (typeof url_object.searchParams != "undefined") {
+        param_redirectUrl = url_object.searchParams.get('redirectUrl');
+    }
+    if (param_redirectUrl == null) {
+        url_redirect = encodeURIComponent(url_home);
+    } else {
+        url_redirect = encodeURIComponent(url_object.searchParams.get('redirectUrl'));
+    }
+} else {
+    url_redirect = encodeURIComponent(window.location.protocol + '//' + window.location.hostname + pathname + url_object.search);
+}
+var url_login = url_home + 'login/?redirectUrl=' + url_redirect;
+var url_login_movil = url_home + ((lang == '/en/') ? 'login-mobile' : 'login-movil') + '/?redirectUrl=' + url_redirect;
+var url_onboarding = url_home + 'onboarding/';
+var url_reset_password = url_home + 'remember/';
+
+// Comprueba si hay un usuario que ha iniciado sesión
+function checkUserLogged() {
+    if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+        BbvaComponent.getUserLogged(function(err, user) {
+            if (typeof(user) !== "undefined") {
+                if (pathname == lang + 'login/' || pathname == lang + 'remember/') {
+                    window.location.href = decodeURIComponent(url_home);
+                } else {
+                    if (typeof digitalData !== "undefined") {
+                        digitalData.user.userState = "logado";
+                    }
+                    paintMenuUserLogged(user);
+                }
+            } else {
+                rememberme = getCookie('bbva_rememberme');
+                if (rememberme == "true") {
+                    jQuery.post('/auth/users/access?remember_me=true', function() {
+                        checkUserLogged();
+                        paintListaLectura();
+                    }).error(function() {
+                        if (typeof digitalData !== "undefined") {
+                            digitalData.user.userState = "no logado";
+                        }
+                        paintMenuUserNotLogged();
+                        // Borro cookies de Armadillo y rememberme
+                        delete_cookie("CloudFront-Key-Pair-Id");
+                    });
+                } else {
+                    if (typeof digitalData !== "undefined") {
+                        digitalData.user.userState = "no logado";
+                    }
+                    paintMenuUserNotLogged();
+                    // Borro cookies de Armadillo
+                    delete_cookie("CloudFront-Key-Pair-Id");
+                }
+            }
+        });
+    } else {
+        rememberme = getCookie('bbva_rememberme');
+        if (rememberme == "true") {
+            jQuery.post('/auth/users/access?remember_me=true', function() {
+                checkUserLogged();
+                paintListaLectura();
+            }).error(function() {
+                if (typeof digitalData !== "undefined") {
+                    digitalData.user.userState = "no logado";
+                }
+                paintMenuUserNotLogged();
+            });
+        } else {
+            if (typeof digitalData !== "undefined") {
+                digitalData.user.userState = "no logado";
+            }
+            paintMenuUserNotLogged();
+        }
+    }
+}
+
+// Pinta el menú login para un usuario que ha iniciado sesión
+function paintMenuUserLogged(user) {
+    var user_name = user.get('optional_data').surname;
+    user_name = user_name.replace('&nbsp;', ' ');
+    user_name = user_name.replace('  ', ' ');
+    var html = '<ul class="lista_menuLogin login_reg"><li class="itemLista_loginUser"><a href="{{URL_CONFIG}}"><i class="icon-tools_myprofile" aria-hidden="true"></i><span>{{USER_NAME}}</span></a></li><li class="itemLista_loginDesconectar"><a href="{{URL_HOME}}" role="button"><i class="icon-nav_on" aria-hidden="true"></i><span>{{TEXT_DISCONNECT}}</span></a></li></ul>';
+
+    var htmlResponsive = '<li class="mobilenav-tools__item mobilenav-tools__item--alternative"><a href="{{URL_CONFIG}}"><i class="icon-tools_myprofile" aria-hidden="true"></i><span class="mobilenav-tools__label">{{USER_NAME}}</span></a></li><li class="mobilenav-tools__item mobilenav-tools__item-logout"><a href="#"><i class="icon-nav_on" aria-hidden="true"></i><span class="mobilenav-tools__label">{{TEXT_DISCONNECT}}</span></a></li>';
+    var userResponsive = '<p class="mobilenav-tools__item mobilenav-tools__item--reading-list"> \
+                            <a href="{{ENLACE_LISTA_LECTURA}}"> \
+                                <i class="icon-tools_listview" aria-hidden="true"></i> \
+                                <span class="lecturaNum">0</span> \
+                                <span class="mobilenav-tools__label">{{TEXT_LISTA_DE_LECTURA}}</span> \
+                            </a> \
+                        </p>';
+    if (window.innerWidth < 992) {
+        user_name_desktop = ((user_name.length >= 14) ? user_name.substring(0, 13).trim() + '&hellip;' : user_name);
+    } else {
+        user_name_desktop = ((user_name.length >= 45) ? user_name.substring(0, 44).trim() + '&hellip;' : user_name);
+    }
+
+    html = html.replace('{{URL_CONFIG}}', url_config);
+    html = html.replace('{{USER_NAME}}', user_name_desktop);
+    html = html.replace('{{URL_HOME}}', url_home);
+    html = html.replace('{{TEXT_DISCONNECT}}', object_name.desconectar);
+
+    htmlResponsive = htmlResponsive.replace('{{URL_CONFIG}}', url_config);
+    htmlResponsive = htmlResponsive.replace('{{USER_NAME}}', user_name);
+    userResponsive = userResponsive.replace('{{ENLACE_LISTA_LECTURA}}', object_name.enlace_lista_lectura);
+    htmlResponsive = htmlResponsive.replace('{{TEXT_DISCONNECT}}', object_name.desconectar);
+    userResponsive = userResponsive.replace('{{TEXT_LISTA_DE_LECTURA}}', object_name.text_lista_de_lectura);
+
+    jQuery('.headerTools_user.col-sm-12').html(html);
+    jQuery('.mobilenav-tools').html(htmlResponsive);
+    jQuery(userResponsive).insertAfter(".mobilenav-tools");
+
+    jQuery('#webpage').addClass('logado');
+
+    jQuery(".itemLista_lectura").css("display", "inline-block");
+
+    //paintListaLectura();
+    // Bullet lista lectura
+    custom_json = user.get('custom');
+    if (typeof custom_json == 'string')
+        custom_json = JSON.parse(custom_json);
+    var leerluego = jQuery.extend(true, {}, custom_json)["listalectura"]["leerluego"];
+    leerluego = leerluego.sort(Comparator);
+    jQuery(".itemLista_lectura").find("strong").html(leerluego.length);
+    jQuery(".mobilenav-tools__item--reading-list a .lecturaNum").html(leerluego.length);
+    //------------------------
+
+    jQuery("#section_mas-info").css("display", "block");
+    jQuery("#section_redes_sociales_banner_fullwidth").css("display", "block");
+}
+
+function paintListaLectura() {
+    if (jQuery('#page_home_noLogin').length > 0) {
+        if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+            BbvaComponent.getUserLogged(function(err, user) {
+                if (typeof(user) !== "undefined") {
+                    custom_json = user.get('custom');
+                    if (typeof custom_json == 'string')
+                        custom_json = JSON.parse(custom_json);
+
+                    var leerluego = jQuery.extend(true, {}, custom_json)["listalectura"]["leerluego"];
+                    leerluego = leerluego.sort(Comparator);
+
+                    if (jQuery('.multiple-items').is('.slick-initialized')) {
+                        jQuery('.multiple-items').slick('destroy');
+                        jQuery('#carousel3Col_inner').html('');
+                    }
+
+                    iterateListaLectura(leerluego, 6, 0);
+                }
+            });
+        }
+    }
+}
+
+function Comparator(a, b) {
+    if (a[1] > b[1]) return -1;
+    if (a[1] < b[1]) return 1;
+    return 0;
+}
+
+function iterateListaLectura(lista, max_leerluego, idx) {
+    if (idx == max_leerluego || idx >= lista.length) {
+        generarCarrusel();
+    } else {
+        var tipo = "publicacion";
+        var path = "/wp-content/uploads/json/" + tipo + "/";
+        var id = lista[idx][0];
+        jQuery.ajax({
+            dataType: "json",
+            url: path + id + ".json",
+        }).then(function(post) {
+            html = getPostListaLecturaCarrusel(post);
+            jQuery("#carousel3Col_inner").append(html);
+            iterateListaLectura(lista, max_leerluego, idx + 1)
+        }, function(err) {
+            console.log(err);
+            iterateListaLectura(lista, max_leerluego, idx + 1)
+        });
+
+    }
+}
+
+// HTML del post
+function getPostListaLecturaCarrusel(post) {
+    var html = '<div class="carousel-item"><a href="##URL_PUBLICACION##"><div class="item carousel-item_content col-md-10 col-sm-10" style="background-image:url(\'##URL_IMAGEN##\'); background-repeat:no-repeat"><h2 class="carousel-item_title">##TITULO##</h2><p class="carousel-item_cardFecha"><i class="icon-bulletRectangle"></i><span class="fecha">##FECHA##</span></p></div></a><div class="col-md-10 pt-3"><img src="/wp-content/themes/bbvaresearch/images/component/shadow_carousel.svg" width=100%></div></div>';
+    // Idioma en el que estamos
+
+    var lang = '';
+    switch (jQuery('html').attr('lang')) {
+        case 'es':
+            lang = 'es';
+            break;
+        case 'en':
+            lang = 'en';
+            break;
+        default:
+            lang = 'en';
+    }
+
+    /**
+    ##CLASE_DIV##
+    ##CLASE_ARTICLE##
+    ##URL_IMAGEN##
+    ##FECHA##
+    ##URL_PUBLICACION##
+    ##TITULO##
+    ##RESUMEN##
+    ##URL_SHARE_TWITTER##
+    ##URL_SHARE_LINKEDIN##
+    ##URL_SHARE_GOOGLE_PLUS##
+    ##URL_COMENTAR##
+    ##LISTADO_GEOGRAFIAS##
+    ##LISTADO_TEMATICAS##
+    ##GEOGRAFIAS_POPUP##
+    ##TEMATICAS_POPUP##
+    ##DOCUMENTOS_ASOCIADOS##
+    ##MODALES_DESCARGAS##
+    ##MODALES_MULTIMEDIA##
+    */
+
+    var url_imagen = post.image;
+    var fecha = timeConverter(post.date, lang);
+    var url_publicacion = post.url[lang];
+    var titulo = post.title[lang];
+    titulo = (titulo.length > 150) ? titulo.substr(0, 149) + '…' : titulo;
+
+    html = html.replace('##URL_IMAGEN##', url_imagen);
+    html = html.replace('##FECHA##', fecha);
+    html = html.replace('##URL_PUBLICACION##', url_publicacion);
+    html = html.replace('##TITULO##', titulo);
+
+    return html;
+}
+
+// Pinta el menú login para un usuario que no ha iniciado sesión
+function paintMenuUserNotLogged() {
+    var html = ' \
+    <ul class="lista_menuLogin login_noreg">\
+        <li class="itemLista_loginInicioSesion">\
+            <a href="javascript:void(0);" data-toggle="modal" data-target="#modalInicioSesion" id="linkInicioSesion">\
+            <i class="icon-tools_myprofile" aria-hidden="true"></i>\
+            <span>{{TEXT_LOGIN}}</span>\
+            </a>\
+            {{MODAL_LOGIN}}\
+        </li>\
+        <li class="itemLista_loginRegistro">\
+            <a href="{{ONBOARDING_URL}}" id="loginRegistrarte">\
+            <span>{{TEXT_REGISTRATE}}</span>\
+            </a>\
+        </li>\
+    </ul>';
+
+    let modal = ' \
+    <div class="modal fade modal_login" id="modalInicioSesion" tabindex="-1" role="dialog" aria-labelledby="modalInicioSesion"> \
+        <div class="modal-dialog" role="document"> \
+            <div class="modal-content"> \
+                <div class="modal-header"> \
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"> \
+                        <i class="icon-nav_close"></i> \
+                        <span class="textoIconoOcultar" aria-hidden="true">{{CLOSE_MODAL}}</span> \
+                    </button> \
+                </div> \
+                <div class="modal-body component_do_login"> \
+                    <div class="modal_login_container"> \
+                        <h2 class="modal_login__title">{{LOGIN_TITLE}}</h2> \
+                        <form id="login-step2" class="needs-validation modal_login__formInicio component_login" action="" \
+                            novalidate> \
+                            <div class="formGroup_row modal_login__formInicio__input"> \
+                                <div class="formGroup_text"> \
+                                    <input id="datos_personales_email-step1" name="datos_personales_email-step1" \
+                                        class="formText form-control  bggrey" required="" data-form-prop="" \
+                                        data-validator="" value="" type="email" autocomplete="off"> \
+                                    <label class="formTextLabel" for="datos_personales_email-step1">{{EMAIL_TEXT}}\
+                                    </label> \
+                                </div> \
+                            </div> \
+                            <div class="formGroup_row modal_login__formInicio__input"> \
+                                <div class="formGroup_text"> \
+                                    <input id="datos_personales_password" name="datos_personales_password" \
+                                        class="formText form-control  bggrey" required="" data-form-prop="" \
+                                        data-validator="" value="" type="password" autocomplete="off"> \
+                                    <label class="formTextLabel" for="datos_personales_password">{{PASSWORD_TEXT}}</label> \
+                                    <div id="errorLogin" class="invalid-feedback pb-2" style="display:none"> \
+                                        <span class="icon-commu_alert "> </span>{{ERROR_TEXT}}\
+                                    </div> \
+                                </div> \
+                            </div> \
+                            <div class="modal_login__formInicio__botones"> \
+                                <div class="row"> \
+                                    <a href="javascript:void(0);" data-dismiss="modal" aria-label="Close">{{CANCEL_BUTTON}}</a> \
+                                    <button id="btn-login-step2" class="modal_login__boton" type="submit">{{LOGIN_BUTTON}}</button> \
+                                </div> \
+                                <div class="row"> \
+                                    <a href="{{REMEMBER_URL}}">{{REMEMBER_TEXT}}</a> \
+                                </div> \
+                            </div> \
+                        </form> \
+                    </div> \
+                </div> \
+            </div> \
+        </div> \
+    </div>';
+    modal = modal.replace('{{CLOSE_MODAL}}', object_name.close_modal);
+    modal = modal.replace('{{LOGIN_TITLE}}', object_name.login_title);
+    modal = modal.replace('{{EMAIL_TEXT}}', object_name.email_text);
+    modal = modal.replace('{{PASSWORD_TEXT}}', object_name.password_text);
+    modal = modal.replace('{{ERROR_TEXT}}', object_name.email_password_error_text);
+    modal = modal.replace('{{LOGIN_BUTTON}}', object_name.siguiente);
+    modal = modal.replace('{{CANCEL_BUTTON}}', object_name.cancelar);
+    modal = modal.replace('{{REMEMBER_URL}}', url_reset_password);
+    modal = modal.replace('{{REMEMBER_TEXT}}', object_name.remember_text);
+    
+
+    html = html.replace('{{TEXT_LOGIN}}', object_name.iniciar_sesion);
+    html = html.replace('{{MODAL_LOGIN}}', modal);
+    html = html.replace('{{ONBOARDING_URL}}', url_onboarding);
+    html = html.replace('{{TEXT_REGISTRATE}}', object_name.registro);
+    
+    var htmlResponsive = '<li class="mobilenav-tools__item mobilenav-tools__item--alternative"><a href="{{LOGIN_URL}}"><i class="icon-tools_myprofile" aria-hidden="true"></i><span class="mobilenav-tools__label">{{TEXT_LOGIN}}</span></a></li><li class="mobilenav-tools__item"><a href="{{ONBOARDING_URL}}"><span class="mobilenav-tools__label">{{TEXT_REGISTRATE}}</span></a></li>';
+    
+    htmlResponsive = htmlResponsive.replace('{{LOGIN_URL}}', url_login_movil);
+    htmlResponsive = htmlResponsive.replace('{{TEXT_LOGIN}}', object_name.iniciar_sesion);
+    htmlResponsive = htmlResponsive.replace('{{ONBOARDING_URL}}', url_onboarding);
+    htmlResponsive = htmlResponsive.replace('{{TEXT_REGISTRATE}}', object_name.registro);
+
+    jQuery('.headerTools_user').html(html);
+    jQuery('.mobilenav-tools').html(htmlResponsive);
+
+    jQuery('#webpage').removeClass('logado');
+}
+
+function delete_cookie(name) {
+    document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
+function userLogged() {
+    authComponentLoaded = true;
+    checkUserLogged();
+    paintListaLectura();
+    // Inicializamos desde aquí el componente de Salesforce
+    if (typeof salesforceComponent != 'undefined') {
+        salesforceComponent.setCookieSalesforce();
+        salesforceComponent.init();
+    }
+}
+
+// Comprobar si hay algún usuario logado
+if (hostsPro.indexOf(hostname) == -1 && hostsSB.indexOf(hostname) == -1) { // si estoy en local siempre pinto el menú sin usuario
+    paintMenuUserNotLogged();
+    jQuery(document).ready(function() {
+        // Inicializamos desde aquí el componente de Salesforce
+        if (typeof salesforceComponent != 'undefined') {
+            salesforceComponent.setCookieSalesforce();
+            salesforceComponent.init();
+        }
+    });
+} else {
+    var interval1;
+    var interval2;
+    var interval3;
+
+    jQuery(document).ready(function() {
+        if (authComponentLoaded == false && typeof interval1 == 'undefined') {
+            // Hago las comprobaciones de usuario logado o no en: un intervalo, cuando se carga el componente auth de Openweb (solo se carga si hay un usuario logado) o en el ajaxStop. SOLO SE HACE UNA VEZ, la primera que ocurra
+            interval1 = setInterval(function() {
+                BbvaComponentIsLoaded = (typeof(BbvaComponent) !== "undefined");
+                if (BbvaComponentIsLoaded && authComponentLoaded == false) {
+                    userLogged();
+                    clearInterval(interval1);
+                    if (typeof interval2 !== 'undefined')
+                        clearInterval(interval2);
+                    if (typeof interval3 !== 'undefined')
+                        clearInterval(interval3);
+                }
+            }, 500);
+        }
+    });
+
+    jQuery(document).ajaxComplete(function(event, xhr, settings) {
+        if (typeof settings.url != 'undefined' && (settings.url).indexOf('private/authbbva/') !== -1 && authComponentLoaded == false && typeof interval2 == 'undefined') {
+            interval2 = setInterval(function() {
+                BbvaComponentIsLoaded = (typeof(BbvaComponent) !== "undefined");
+                if (BbvaComponentIsLoaded && authComponentLoaded == false) {
+                    userLogged();
+                    clearInterval(interval2);
+                    if (typeof interval1 !== 'undefined')
+                        clearInterval(interval1);
+                    if (typeof interval3 !== 'undefined')
+                        clearInterval(interval3);
+                }
+            }, 100);
+        }
+    });
+
+    jQuery(document).ajaxStop(function() {
+        if (authComponentLoaded == false && typeof interval3 == 'undefined') {
+            interval3 = setInterval(function() {
+                BbvaComponentIsLoaded = (typeof(BbvaComponent) !== "undefined");
+                if (BbvaComponentIsLoaded && authComponentLoaded == false) {
+                    userLogged();
+                    clearInterval(interval3);
+                    if (typeof interval1 !== 'undefined')
+                        clearInterval(interval1);
+                    if (typeof interval2 !== 'undefined')
+                        clearInterval(interval2);
+                }
+            }, 100);
+        }
+    });
+}
+
+// Funcionalidad para el enlace de logout
+jQuery(document).on('click', '.headerTools_user .itemLista_loginDesconectar a, .mobilenav-tools__item-logout', function(event) {
+    event.preventDefault();
+    if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+        BbvaComponent.getUserLogged(function(err, user) {
+            if (typeof(user) !== "undefined") {
+                user.logout(function(err) {
+                    if (err) {
+                        //console.log(err);
+                    }
+                    // Aun dando error, hace el logout
+                    if (typeof digitalData !== 'undefined' && typeof digitalLink == "function") {
+                        digitalLink("Logout", digitalData);
+                    }
+
+                    // Borro cookies de Armadillo y rememberme
+                    delete_cookie("CloudFront-Key-Pair-Id");
+                    delete_cookie("bbva_rememberme");
+
+                    // Si estoy en una página privada redirigo a la home, en caso contrario recargo la página actual
+                    if (window.location.pathname.indexOf('/configcuenta') > -1 || window.location.pathname.indexOf('/listas-de-lectura') > -1 || window.location.pathname.indexOf('/reading-list') > -1) {
+                        window.location.href = decodeURIComponent(url_home);
+                    } else {
+                        window.location.reload();
+                    }
+                });
+            }
+        });
+    }
+});
+
+function gnossAutocomplete(id, element) {
+    var input = jQuery(id);
+    input.on('input', function(e) {
+        var value = jQuery(this).val();
+        if (value.length > 1) {
+            var url_autocomplete_gnoss = object_name.url_autocomplete_gnoss;
+            //digitalData.page.pageActivity.search.onSiteSearchEnterTerm = cleanString(decodeURIComponent(value), 255);
+            jQuery.getJSON(url_autocomplete_gnoss + '?pBusqueda=' + value, function(data) {
+                var results = data.results;
+                if (results.length > 0) {
+                    var list = [];
+                    jQuery.each(results, function(index, value) {
+                        list.push({
+                            value: value.url,
+                            label: value.text
+                        });
+                    });
+                    element.list = list;
+                }
+            });
+        }
+    });
+}
+
+function redirectSearchPage(param) {
+    lang = jQuery('html').attr('lang');
+    if (lang == 'es') {
+        url_buscador = '/buscador/' + param;
+    } else {
+        url_buscador = '/en/search/' + param;
+    }
+    window.location = url_buscador;
+}
+
+function removeSpecials(str) {
+    var permitidos = [':', '-'];
+    var res = "";
+    var lower = str.toLowerCase();
+    var upper = str.toUpperCase();
+
+    for (var i = 0; i < lower.length; ++i) {
+        if (permitidos.includes(lower[i]) || lower[i] != upper[i] || lower[i].trim() === '' || !isNaN(lower[i]))
+            res += str[i];
+    }
+
+    return res;
+}
+
+function redirect404Page() {
+    lang = jQuery('html').attr('lang');
+    if (lang == 'es' && current_url.indexOf(host + '/en/') > -1) {
+        window.location.replace('/en/error-404/');
+    } else if (lang == 'en') {
+        history.replaceState({
+            id: 'JS redirect'
+        }, document.title, document.referrer);
+    }
+}
+
+function hideAuthorsLinkInPublication() {
+    jQuery.getJSON('/wp-content/uploads/json/authors/authors_with_no_link.json', function(authors) {
+        jQuery.each(authors, function(key, val) {
+            jQuery('#author-' + val).attr("href", "javascript:void(0);");
+            jQuery('#author-' + val).css("cursor", "default");
+        });
+    });
+}
+
+function changeYoutubeUrlAYoutubeNOCookie(urlYoutube) {
+    return urlYoutube.replace("youtube.com", "youtube-nocookie.com");;
+}
+
+function changeYoutubeNOCookieUrlAYoutube(urlYoutube) {
+    return urlYoutube.replace("youtube-nocookie.com", "youtube.com");;
+}
+
+//volver a url de youtube original si cookies aceptadas.
+function OptanonWrapper() {
+	//Comprobamos si el banner ha sido aceptado
+    var bannerAceptado = Optanon.IsAlertBoxClosedAndValid();
+	if (bannerAceptado) {
+		if (OnetrustActiveGroups.indexOf("C0003") > 0)
+		{//Si ha aceptado la cookie de categoría C0003 cambiamos la url de youtube a la original con cookies
+			jQuery('iframe[src*="youtu"]').each(function(){
+				var urlYoutube = jQuery(this).attr('src');
+				jQuery(this).attr('src', changeYoutubeNOCookieUrlAYoutube(urlYoutube));
+			});
+		}
+	}
+}
+
+/**
+ * Script para copiar URL de publicación/documento al portapapeles (class .copy-to-clipboard + data-url).
+ */
+jQuery(document).ready(function($) {
+    $('body').on('click', '.copy-to-clipboard', function(e) {   
+        e.preventDefault();
+        
+        let url = $(this).data('url');
+        
+        navigator.clipboard.writeText(url);
+
+        let clipboardIcon = $(this).find('i.icon-nav_link');
+        
+        // Animación de feedback de copiado de enlace en icono
+        clipboardIcon.fadeOut(100);
+        setTimeout(function() {
+            clipboardIcon.removeClass('icon-nav_link').addClass('icon-nav_checkmark');
+            
+            clipboardIcon.fadeIn(100).delay(1000).fadeOut(100);
+        
+            setTimeout(function() {
+                clipboardIcon.removeClass('icon-nav_checkmark').addClass('icon-nav_link');
+            }, 1200);
+
+            clipboardIcon.fadeIn(100);
+        }, 100);        
+    });
+    
+    $.fn.setPHPCardsTagsForMobile = function(tag) {
+        let max_tags_chars = 26;
+        let etiquetas_de_tag = ('geografia' === tag) ? object_name.etiquetas_de_geografia : object_name.etiquetas_de_tematica;
+        let tags_link = '<li class="itemList_tooltipAllLabel group_' + tag + '"><a href="javascript:void(0);"> ... </a></li>';        
+        let tags_popup = '<div id="" class="tooltip_allLabels tooltip_group_' + tag + '"><div class="tooltip_allLabels_container"><div class="partial_lista_etiquetas"><div class="lista_labels_group tooltip_group_' + tag + '"><ul class="lista_labels"><li class="lista_itemTitulo">' + etiquetas_de_tag + '</li></ul></div></div></div></div>';           
+        let card_id = $(this).attr('id');
+        let tags = $('#' + card_id + ' .group_labels_' + tag + ' ul.lista_labels li:not(.lista_itemTitulo)');
+        let i = 0;
+        let size = tags.length;
+        let total_chars = 0;
+        let tag_chars = 0;
+        let tag_link = null;
+
+        for (i = 0; i < size; i++) {
+            tag_link = $(tags[i]).children('a');
+
+            if ($(tag_link).attr('href') === 'javascript:void(0);') {
+                continue;
+            }
+            
+            tag_chars = $(tag_link).html().length;
+            total_chars += tag_chars;
+
+            if (total_chars > max_tags_chars) {  
+                if ($('#' + card_id + ' .group_labels_' + tag + ' .group_' + tag).length === 0) {
+                    $('#' + card_id + ' .group_labels_' + tag + ' .lista_labels').append(tags_link);
+                    $('#' + card_id + ' .shortcode_card_container .card_groupLabels').append(tags_popup);
+                }
+
+                $('#' + card_id + ' .tooltip_group_' + tag + ' .partial_lista_etiquetas .lista_labels').append('<li class=""><a href="' + $(tag_link).attr('href') + '">' + $(tag_link).html() + '</a></li>');
+
+                $(tags[i]).remove();
+            }
+        }
+    };
+    
+    if (isMobile()) {
+        $('[id^=card-]:not(.card-js)').each(function() {
+            $(this).setPHPCardsTagsForMobile('geografia');
+            $(this).setPHPCardsTagsForMobile('tematica');
+        });
+    }
+});
+
+function sanitizeTelegramURL(url_share_telegram, titulo) {
+    let not_encoded_url = url_share_telegram.match(/share\?url=/i);
+    
+    if (null !== not_encoded_url) {
+        url_share_telegram = url_share_telegram.replace('share?url=', 'share/url?url=');
+        url_share_telegram = url_share_telegram.replace(/text=.*/i, 'text=' + encodeURIComponent(titulo));
+    }
+    
+    return url_share_telegram;
+}
