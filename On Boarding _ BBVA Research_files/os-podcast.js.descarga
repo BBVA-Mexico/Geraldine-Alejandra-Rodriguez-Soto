@@ -1,0 +1,167 @@
+var podcastTimer = 0;
+var nextPodcastStage = 0;
+var podcastTimerInterval = 0;
+var currentPodcastData = {};
+var podcastStopped = true;
+
+jQuery(document).ready(function($) {
+    // Variables para detalle de publicación
+    var pubModalLink = '.player-launcher';
+    var pubModalCloseButton = '.playerModal button.close';
+    
+    // Trigger before play when click on timeline
+    document.addEventListener('pause', function(event) {
+        stopTimer();
+    }, true);
+    
+    // Trigger after pause when click on timeline
+    document.addEventListener('play', function(event) {
+        let currentPodcast = $(event.target);
+
+        podcastStopped = false;
+        startTimer(currentPodcast[0]);
+    }, true);
+    
+    // Abrir player 
+    $(document).on('click', pubModalLink, function() {
+        let currentModal = $(this).data('target');
+        
+        // Parar todos los vídeos
+        $('.jsVideoContainer iframe').each(function() {
+            $(this).attr('src', '');
+        });
+        
+        // Paramos todos los reproductores de Podcasts activos
+        $('.modal .modalAudio audio').each(function() {
+            $(this)[0].pause();
+            $(this)[0].currentTime = 0;
+            stopTimer($(this));
+        });
+        
+        // Cerramos todos los modals
+        $('.modal').modal('hide');
+        
+        // Ignoramos clase .modal-open de Bootstrap
+        $('body').addClass('modal-open--ignored');
+        
+        // Iniciamos reproducción del archivo multimedia seleccionado
+        if ($(this).hasClass('podcast-launcher')) {
+            podcastTimer = 0;
+            podcastStopped = true;
+            
+            let currentPodcast = $(currentModal + ' audio')[0];
+            $(currentPodcast).attr('src', $(currentPodcast).data('src'));
+            
+            currentPodcast.play();            
+        }
+        else {
+            let currentVideo = $('.' + $(this).data('video-id'));
+            $(currentVideo).attr('src', $(currentVideo).data('src'));
+        }
+    });
+    
+    // Cerrar player
+    $(document).on('click', pubModalCloseButton, function() {
+        let currentModal = $(this).parents('.modal-body').children('div');
+        
+        if ($(currentModal).hasClass('modalAudio')) {
+            // Paramos el podcast en reproducción
+            $(this).parents('.modalAudio').find('audio')[0].pause();
+            $(this).parents('.modalAudio').find('audio')[0].currentTime = 0;
+            stopTimer($(this).parents('.modalAudio').find('audio')[0]);
+            
+            $('.jsAudioContainer audio').each(function() {
+                $(this).attr('src', '');
+            });
+        }
+        else if ($(currentModal).hasClass('modalVideo')) {
+            $('.jsVideoContainer iframe').each(function() {
+                $(this).attr('src', '');
+            });
+        }
+        
+        $('.modal').modal('hide');
+    });
+    
+    function startTimer(podcast) {  
+        let buffered = podcast.buffered;
+
+        if (buffered.length) {
+            let podcastUrl = $(podcast).data('src');
+            
+            if ('undefined' === typeof currentPodcastData || currentPodcastData.url !== podcastUrl) {
+                let podcastPlayer = $(podcast).parents('.playerModal')[0];
+                let podcastUrlChunks = podcastUrl.split('/');
+            
+                currentPodcastData = {
+                    id: podcastUrlChunks.at(-1),
+                    name: slugify($(podcastPlayer).find('.jsAudioTitle').html()),
+                    duration: podcast.duration.toFixed(),
+                    player: podcastUrlChunks.at(2),
+                    url: podcastUrl
+                };
+            }
+            
+            let played = Math.trunc(podcast.currentTime);  
+
+            let interval0 = 0;
+            let interval25 = Math.trunc(podcast.duration * 0.25);
+            let interval50 = Math.trunc(podcast.duration * 0.50);
+            let interval75 = Math.trunc(podcast.duration * 0.75);
+            let interval100 = Math.trunc(podcast.duration) - 1; // A veces no llega al último segundo
+            
+            if (interval0 === played && podcastTimer > 0) {
+                registerPodcastProgress(currentPodcastData, 0);
+            }
+            else if (interval25 === played) {
+                registerPodcastProgress(currentPodcastData, 25);
+            }
+            else if (interval50 === played) {
+                registerPodcastProgress(currentPodcastData, 50);
+            }
+            else if (interval75 === played) {
+                registerPodcastProgress(currentPodcastData, 75);
+            }
+            else if (interval100 === played) {
+                stopTimer();
+                registerPodcastProgress(currentPodcastData, 100); 
+            }
+        }
+
+        if (!podcastStopped) {
+            podcastTimer = setTimeout(startTimer, 1000, podcast);
+        }
+    }
+
+    function stopTimer() {        
+        if ('undefined' !== typeof podcastTimer) {
+            clearTimeout(podcastTimer);
+            podcastTimer = 0;
+            podcastStopped = true;
+        }
+    };
+    
+    function slugify(str) {
+        str = str.replace(/^\s+|\s+$/g, '');
+
+        // Make the string lowercase
+        str = str.toLowerCase();
+
+        // Remove accents, swap ñ for n, etc
+        var from = "ÁÄÂÀÃÅČÇĆĎÉĚËÈÊẼĔȆÍÌÎÏŇÑÓÖÒÔÕØŘŔŠŤÚŮÜÙÛÝŸŽáäâàãåčçćďéěëèêẽĕȇíìîïňñóöòôõøðřŕšťúůüùûýÿžþÞĐđßÆa·/_,:;";
+        var to   = "AAAAAACCCDEEEEEEEEIIIINNOOOOOORRSTUUUUUYYZaaaaaacccdeeeeeeeeiiiinnooooooorrstuuuuuyyzbBDdBAa------";
+        for (var i=0, l=from.length ; i<l ; i++) {
+            str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
+        }
+
+        // Remove invalid chars
+        str = str.replace(/[^a-z0-9 -]/g, '') 
+        // Collapse whitespace and replace by -
+        //.replace(/\s+/g, '-') 
+        // Collapse dashes
+        .replace(/-+/g, '-'); 
+
+        return str;
+    }
+    
+});

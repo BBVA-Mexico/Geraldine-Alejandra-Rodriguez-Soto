@@ -1,0 +1,91 @@
+.filtro_geografico .dropdown-item.children a {
+    padding-left: 1.5rem !important;
+}
+
+.filtro_geografico .dropdown-item.children.last-children a {
+    padding-left: 3rem !important;
+}
+
+.filtro_geografico .dropdown-item.current a {
+    font-weight: bold;
+    color: #1973B8 !important;
+}
+
+/*#page_publicaciones .component_publicacionesUltimas .container .partial_filtros {
+    width: 50%;
+    height: 70px;
+    float: right;
+    display: inline-block;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: end;
+    -ms-flex-pack: end;
+    justify-content: flex-end;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
+    flex-direction: row;
+}*/
+
+/*#page_publicaciones .component_publicacionesUltimas .container .partial_masRecientes {
+    width: 50%;
+    height: 70px;
+    float: left;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: start;
+    -ms-flex-pack: start;
+    justify-content: flex-start;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
+    flex-direction: row;
+}*/
+
+.filtro_geografico .filtro_select {
+    width: 250px !important;
+}
+
+.filtro_geografico .filtro_select ul {
+    overflow: hidden;
+    overflow-y: auto;
+    max-height: 300px;
+}
+
+.partial_masRecientes .lista_masrecientes li {
+    display: inline;
+    margin-right: 28px;
+    font-family: "BentonMedium", sans-serif;
+    font-size: 15px;
+    line-height: 24px;
+}
+
+.partial_masRecientes .lista_masrecientes li.lista_itemTitulo {
+    display: none;
+}
+
+.partial_masRecientes .lista_masrecientes li a i {
+    margin-right: 8px;
+    position: relative;
+    top: 2px;
+}
+
+.partial_masRecientes .lista_masrecientes li a, 
+.partial_masRecientes .lista_masrecientes li a i:before {
+    color: #666666;
+}
+
+.partial_masRecientes .lista_masrecientes li a.active,  
+.partial_masRecientes .lista_masrecientes li a.active i:before, 
+.partial_masRecientes .lista_masrecientes li a:hover, 
+.partial_masRecientes .lista_masrecientes li a:hover i:before {
+    color: #DA3851;
+}

@@ -1,0 +1,32 @@
+jQuery(document).ready(function($) {
+    
+    var webSite = $('html');
+    var partialFiltros = webSite.find('.partial_filtros');
+    var filtroGeografico = partialFiltros.find('.filtro_geografico');
+    var linkFiltroGeografico = filtroGeografico.find('.filtro_link');
+    var selectFiltroGeografico = filtroGeografico.find('.filtro_select').hide();
+    var iconPlaceGeo = filtroGeografico.find('.icon-nav_place');
+    var iconCloseGeo = filtroGeografico.find('.icon-nav_close').hide();
+
+    linkFiltroGeografico.on('click', function() {
+        if ($(this).hasClass('inactive')) {
+            $(this).removeClass('inactive');
+            $(this).addClass('active');
+            iconPlaceGeo.hide();
+            iconCloseGeo.show();
+            selectFiltroGeografico.show();
+            selectFiltroGeografico.removeClass('cerrado');
+            selectFiltroGeografico.addClass('abierto');
+        }
+        else {
+            $(this).removeClass('active');
+            $(this).addClass('inactive');
+            iconPlaceGeo.show();
+            iconCloseGeo.hide();
+            selectFiltroGeografico.hide();
+            selectFiltroGeografico.removeClass('abierto');
+            selectFiltroGeografico.addClass('cerrado');
+        }
+    });
+    
+});

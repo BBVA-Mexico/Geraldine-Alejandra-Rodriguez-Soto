@@ -1,0 +1,301 @@
+var digitalData = {
+	versionDL: "20191215_4.0.2",
+	pageInstanceID: "",
+	page: {
+		pageInfo: {
+			pageName: "",
+			pageIntent: "",
+			pageSegment: "",
+			sysEnv: "",
+			version: "",
+			channel:"",
+			language: "",
+			geoRegion: "",
+			level1: "",
+			level2: "",
+			level3: "",
+			level4: "",
+			level5: "",
+			level6: "",
+			level7: "",
+			level8: "",
+			level9: "",
+			level10: "",
+			area: "",
+			server: window.location.hostname,
+			businessUnit: "",
+			siteAppName: "",
+			projectName: "",
+			errorPage: "",
+		},
+
+		pageActivity: {
+			search: {
+				onSiteSearchResults: "",
+				onSiteSearchTerm: "",
+				onSiteSearchEnterTerm: "",
+			},
+			link: {
+				name: "",
+				url: "",
+				ext: "",
+				aux1: "",
+				aux2: "",
+				aux3: ""
+			},
+			video: {
+					nameOfVideoDisplayed: "",
+					duration: "",
+					id: "",
+					player: "",
+					quality: "",
+					url: "",
+			},
+			audio: {
+					nameOfPodcastDisplayed: "",
+					duration: "",
+					id: "",
+					player: "",
+					quality: "",
+					url: "",
+			},
+			loginType: "",
+
+		},
+	},
+	optimization: {
+        attributes: [],
+        event: {
+            eventName: "",
+            optimizationEvent: "",
+        }
+    },
+	internalCampaign: {
+		attributes: [],
+		event: {
+			eventInfo: {
+				eventName: "",
+				siteActionName: "",
+			},
+		},
+	},
+	user: {
+		device: {
+			userAgent: "",
+			mobile: "",
+			root: "",
+		},
+		userState: "",
+		profileID: "",
+		userID: "",
+		prospectID: "",
+		segment: {
+			global: "",
+			profile: "",
+		},
+		gender: "",
+		country: "",
+		state: "",
+		age: "",
+		civilStatus: "",
+		educationLevel: "",
+		jobType: "",
+
+	},
+	application: {
+		transactionID: "",
+		application: {
+			type: "",
+			name: "",
+		},
+		fulfillmentModel: "",
+		typology: "",
+		programTypeHired: "",
+		offer: "",
+		operationNumber: "",
+		process: "",
+		step: "",
+		interactionLevel: "",
+		isQualifiedVisits: "",
+		state: "",
+		errorType: "",
+	},
+	products: {
+		attributes: [],
+		productPortfolio: [],
+	},
+	news: {
+		id: "",
+		originalTitle: "",
+		title: "",
+		type: "",
+		originalPublishDate: "",
+		modifiedDate: "",
+		country: "",
+		category: "",
+		signature: "",
+		author: "",
+		countryAuthor: "",
+		relatedId: "",
+		relatedOriginalTitle: "",
+		relatedPosition: "",
+		profile: {
+			lifeCycle: "",
+			value: "",
+			behaviour: "",
+		},
+		product: "",
+		channel: ""
+	}
+};
+
+var digitalDataVacio = {
+	versionDL: "20191215_4.0.2",
+	pageInstanceID: "",
+	page: {
+		pageInfo: {
+			pageName: "",
+			pageIntent: "",
+			pageSegment: "",
+			sysEnv: "",
+			version: "",
+			channel:"",
+			language: "",
+			geoRegion: "",
+			level1: "",
+			level2: "",
+			level3: "",
+			level4: "",
+			level5: "",
+			level6: "",
+			level7: "",
+			level8: "",
+			level9: "",
+			level10: "",
+			area: "",
+			server: window.location.hostname,
+			businessUnit: "",
+			siteAppName: "",
+			projectName: "",
+			errorPage: "",
+		},
+
+		pageActivity: {
+			search: {
+				onSiteSearchResults: "",
+				onSiteSearchTerm: "",
+				onSiteSearchEnterTerm: "",
+			},
+			link: {
+				name: "",
+				url: "",
+				ext: "",
+				aux1: "",
+				aux2: "",
+				aux3: ""
+			},
+			video: {
+					nameOfVideoDisplayed: "",
+					duration: "",
+					id: "",
+					player: "",
+					quality: "",
+					url: "",
+			},
+			audio: {
+					nameOfPodcastDisplayed: "",
+					duration: "",
+					id: "",
+					player: "",
+					quality: "",
+					url: "",
+			},
+			loginType: "",
+
+		},
+	},
+	optimization: {
+        attributes: [],
+        event: {
+            eventName: "",
+            optimizationEvent: "",
+        }
+    },
+	internalCampaign: {
+		attributes: [],
+		event: {
+			eventInfo: {
+				eventName: "",
+				siteActionName: "",
+			},
+		},
+	},
+	user: {
+		device: {
+			userAgent: "",
+			mobile: "",
+			root: "",
+		},
+		userState: "",
+		profileID: "",
+		userID: "",
+		prospectID: "",
+		segment: {
+			global: "",
+			profile: "",
+		},
+		gender: "",
+		country: "",
+		state: "",
+		age: "",
+		civilStatus: "",
+		educationLevel: "",
+		jobType: "",
+
+	},
+	application: {
+		transactionID: "",
+		application: {
+			type: "",
+			name: "",
+		},
+		fulfillmentModel: "",
+		typology: "",
+		programTypeHired: "",
+		offer: "",
+		operationNumber: "",
+		process: "",
+		step: "",
+		interactionLevel: "",
+		isQualifiedVisits: "",
+		state: "",
+		errorType: "",
+	},
+	products: {
+		attributes: [],
+		productPortfolio: [],
+	},
+	news: {
+		id: "",
+		originalTitle: "",
+		title: "",
+		type: "",
+		originalPublishDate: "",
+		modifiedDate: "",
+		country: "",
+		category: "",
+		signature: "",
+		author: "",
+		countryAuthor: "",
+		relatedId: "",
+		relatedOriginalTitle: "",
+		relatedPosition: "",
+		profile: {
+			lifeCycle: "",
+			value: "",
+			behaviour: "",
+		},
+		product: "",
+		channel: ""
+	}
+};

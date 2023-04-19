@@ -1,0 +1,742 @@
+var hostname = window.location.hostname;
+var host = '';
+var projectId = '';
+var hostsPro = ['www.bbvaresearch.com','jjdx6yeh.openweb.bbva','revision-jjdx6yeh.openweb.bbva','edicion-jjdx6yeh.openweb.bbva'];
+var hostsSB = ['js2xjvrn.openweb.bbva','js2xjvrn.openweb.bbva','js2xjvrn.openweb.bbva'];
+index = hostsPro.indexOf(hostname);
+if(index > -1) {
+    if(!(index >= 0))
+        index = 0;
+
+    host = 'https://' + hostsPro[index];
+    projectId = 'jjdx6yeh';
+} else {
+    index = hostsSB.indexOf(hostname);
+    if(!(index >= 0))
+        index = 0;
+
+    host = 'https://' + hostsSB[index];
+    projectId = 'js2xjvrn';
+}
+var numIntentos = 0;
+
+/* Árboles de geografías y temáticas */
+jQuery(document).ready(function($){
+    /*// Redirigir si el usuario está logado
+    if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.getUserLogged() !== null) {
+        var lang = (jQuery('html').attr('lang') !== 'es_ES') ? '/en/' : '/';
+        var url_home        = window.location.protocol + '//' + window.location.hostname + lang;
+        window.location.href = url_home;
+    }*/
+    // if (typeof(BbvaComponent) !== "undefined" && BbvaComponent.isLogged()) {
+    //     BbvaComponent.getUserLogged(function(err, user){ // cargamos al usuario logado en nuestra aplicación
+
+    //         if(typeof user == "undefined" && hostname.indexOf('edicion') == -1 && hostname.indexOf('revision'))
+    //             goToHomepage();
+    //     });
+    // }
+
+    jQuery("span[title]").on('touchstart', function () {
+      var $title = jQuery(this).find(".title");
+      if (!$title.length) {
+        text = jQuery(this).attr("title");
+        text = text.replace(/\n/g, "<br>");
+        jQuery(this).append('<span class="title">' + text + '</span>');
+      } else {
+        $title.remove();
+      }
+    });
+
+    var $tree_geo = jQuery('#geografias_arbol_pro');
+    $tree_geo.tree({
+        data: translation_on_boarding.data_arbol_geografias,
+        autoOpen: 0,
+        closedIcon: $('<i class="icon-nav_expand"></i>'),
+        openedIcon: $('<i class="icon-nav_contract"></i>')
+    });
+    $tree_geo.on(
+        'tree.click',
+        function(e) {
+            // Disable single selection
+            e.preventDefault();
+
+            var selected_node = e.node;
+
+            if (selected_node.id == undefined) {
+                //console.log('The multiple selection functions require that nodes have an id');
+            }
+
+            if ($tree_geo.tree('isNodeSelected', selected_node)) {
+                $tree_geo.tree('removeFromSelection', selected_node);
+            }
+            else {
+                $tree_geo.tree('addToSelection', selected_node);
+            }
+        }
+    );
+
+    var $tree_tem = jQuery('#tematicas_arbol_pro');
+    $tree_tem.tree({
+        data: translation_on_boarding.data_arbol_tematicas,
+        autoOpen: false,
+        closedIcon: $('<i class="icon-nav_expand"></i>'),
+        openedIcon: $('<i class="icon-nav_contract"></i>')
+    });
+    $tree_tem.on(
+        'tree.click',
+        function(e) {
+            // Disable single selection
+            e.preventDefault();
+
+            var selected_node = e.node;
+
+            if (selected_node.id == undefined) {
+                //console.log('The multiple selection functions require that nodes have an id');
+            }
+
+            if ($tree_tem.tree('isNodeSelected', selected_node)) {
+                $tree_tem.tree('removeFromSelection', selected_node);
+            }
+            else {
+                $tree_tem.tree('addToSelection', selected_node);
+            }
+        }
+    );
+
+    var lang = (jQuery('html').attr('lang') !== 'es') ? 'en' : 'es';
+    // Pongo en el switch de idioma el de la página
+    var idioma_switch = 'es';
+    if(jQuery('[name=idioma]:checked').length > 0) {
+        idioma_switch = 'en';
+    }
+    if(idioma_switch != lang) {
+        jQuery('[name=idioma]').parent('.switch').click();
+    }
+
+    jQuery('#datos_personales_email').val('');
+    jQuery('#datos_personales_password').val('');
+});
+
+/* Comprobación de datos personales y creación de usuario */
+jQuery(document).on('click','form.onboard_perfil_form button.boton',function(e){
+    jQuery('.alert.alert-bbva').remove();
+    e.preventDefault();
+
+    var geo_suscripcion = jQuery('#geografias_arbol_pro').tree('getState').selected_node;
+    var topic_suscripcion = jQuery('#tematicas_arbol_pro').tree('getState').selected_node;
+    var frecuencia = jQuery('[name=frecuencia]:checked').val();
+    var nombre = jQuery('#datos_personales_name').val().trim();
+    var apellidos = jQuery('#datos_personales_surname').val().trim();
+    var email = jQuery('#datos_personales_email').val();
+    var password = jQuery('#datos_personales_password').val();
+    var confirmPassword = jQuery('#datos_personales_confirmPassword').val();
+    var condiciones_aceptadas = false;
+    var recaptchaResponse = '';
+    var salesforceId = newSalesforceID();
+    var custom = {
+        salesforceId: salesforceId,
+        geo: geo_suscripcion,
+        tem: topic_suscripcion,
+        frec: frecuencia,
+        listalectura: {
+            leerluego: [],
+            mibiblioteca: []
+        },
+        recibirNews: 1,
+        registerDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+        emailModDate: null,
+        interestsModDate: null,
+    };
+    var errmess = [];
+
+	if(typeof grecaptcha !== 'undefined')
+        recaptchaResponse = grecaptcha.getResponse();
+
+    if(jQuery('#acepto-condiciones:checked').length > 0) {
+        condiciones_aceptadas = true;
+    }
+
+    var idioma = 'es';
+    if(jQuery('[name=idioma]:checked').length > 0) {
+        idioma = 'en';
+    }
+
+    var valid = true;
+    if(nombre == '') {
+        jQuery('#datos_personales_name').parent().addClass('was-validated');
+        errmess.push(translation_on_boarding.nombreObligatorio);
+        valid = false;
+    }
+
+    if(apellidos == '') {
+        jQuery('#datos_personales_surname').parent().addClass('was-validated');
+        errmess.push(translation_on_boarding.apellidoObligatorio);
+        valid = false;
+    }
+
+    if(email == '') {
+        jQuery('#datos_personales_email').parent().addClass('was-validated');
+        errmess.push(translation_on_boarding.emailObligatorio);
+        valid = false;
+    }
+
+    if(password == '') {
+        jQuery('#datos_personales_password').parent().addClass('was-validated');
+        errmess.push(translation_on_boarding.passObligatorio);
+        valid = false;
+    }
+
+    if(confirmPassword == '') {
+        jQuery('#datos_personales_confirmPassword').parent().addClass('was-validated');
+        errmess.push(translation_on_boarding.confPassObligatorio);
+        valid = false;
+    }
+
+    if(password !== confirmPassword) {
+        jQuery('#datos_personales_password').parent().addClass('was-validated');
+        jQuery('#datos_personales_confirmPassword').parent().addClass('was-validated');
+        errmess.push(translation_on_boarding.passNoCoinciden);
+        valid = false;
+    }
+
+    if(condiciones_aceptadas == false) {
+        jQuery('#acepto-condiciones').parent().addClass('was-validated');
+        errmess.push(translation_on_boarding.condObligatoria);
+        valid = false;
+    }
+
+    if(!(recaptchaResponse.length > 0)) {
+        errmess.push(translation_on_boarding.errorRecaptcha);
+        valid = false;
+    }
+
+    if(!valid) {
+        jQuery('form.onboard_perfil_form').closest('section').prepend(getErrorMessage(errmess));
+
+        if(typeof digitalData !== 'undefined' && typeof digitalView == "function"){
+            cleanAsyncVars();
+            setLevel(2, "registro");
+            setLevel(3, "4 datos personales");
+            setUserState();
+
+            setPageName();
+
+            digitalData.application.errorType = "datos incorrectos"
+
+            digitalLink("Site Error", digitalData);
+            
+        }
+
+        scrollToTarget(0);
+        jQuery('.alert.alert-bbva').fadeIn(500/*,function(){
+            setTimeout(function(){
+                jQuery('.alert.alert-bbva').fadeOut(5000,function(){
+                    jQuery('.alert.alert-bbva').remove();
+                });
+            },10000);
+        }*/);
+        return;
+    }
+    numIntentos = 0;
+    registerWebPublicas(email,nombre,apellidos,password,idioma,geo_suscripcion,topic_suscripcion,frecuencia,recaptchaResponse,custom,salesforceId);
+
+});
+
+/* COMPROBACIONES FORMULARIO */
+jQuery(document).on('click keyup','form.onboard_perfil_form input, form_onboard_perfil_form #recaptcha',function(){
+    if(checkMandatoryFieldsOnboarding() && validateRecaptcha()) {
+        jQuery('form.onboard_perfil_form button.boton').attr('disabled',false);
+    } else {
+        jQuery('form.onboard_perfil_form button.boton').attr('disabled',true);
+    }
+});
+
+jQuery(document).on('keyup','form.onboard_perfil_form input#datos_personales_name, form.onboard_perfil_form input#datos_personales_surname',function(e){
+    var code = e.keyCode || e.which;
+    if (code == '9') { // Si es TAB no hacemos nada
+        return;
+    }
+
+    if(jQuery(this).val() == '') {
+        jQuery(this).parent().addClass('was-validated');
+    } else {
+        jQuery(this).parent().removeClass('was-validated');
+    }
+});
+
+jQuery(document).on('keyup','form.onboard_perfil_form input#datos_personales_email',function(e){
+    var code = e.keyCode || e.which;
+    if (code == '9') { // Si es TAB no hacemos nada
+        return;
+    }
+
+    email = jQuery(this).val();
+    if(emailValidator(email)) {
+        jQuery(this).parent().removeClass('was-validated');
+        jQuery(this).get(0).setCustomValidity('');
+    } else {
+        jQuery(this).parent().addClass('was-validated');
+        jQuery(this).get(0).setCustomValidity('Error');
+    }
+
+});
+
+// Está también en configcuenta
+function newSalesforceID() {
+    max = 1000;
+    pad = '0000';
+    rand = '' + Math.floor((Math.random() * max) + 1);
+    if(typeof translation_on_boarding.subsPrefix == 'undefined' || translation_on_boarding.subsPrefix == '') {
+        translation_on_boarding.subsPrefix = 'DEL';
+    }
+    id = translation_on_boarding.subsPrefix + Date.now() + pad.substring(0, pad.length - rand.length) + rand;
+
+    return id;
+}
+
+function registerWebPublicas(email,nombre,apellidos,password,idioma,geo_suscripcion,topic_suscripcion,frecuencia,recaptchaResponse,custom,salesforceId) {
+
+    var authbbva = '/bbva-components/authbbva/';
+    var url = host + authbbva + '?project=' + projectId;
+    var data = {
+        "email": email,
+        "username": email,
+        "password": btoa(password),
+        "g-recaptcha-response": recaptchaResponse,
+        "custom": custom,
+        "optional_data":{
+            "name": salesforceId,
+            //"surname" : nombre + '&nbsp;' + apellidos,
+			"surname" : nombre + '  ' + apellidos,
+            "ow_lang": idioma
+        }
+    }
+    jQuery.ajax({
+        url: url,
+        method: 'POST',
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        beforeSend: function() {
+            jQuery('form.onboard_perfil_form button.boton').attr('disabled',true);
+        },
+        success: function(response) {
+            if(typeof response !== 'undefined' && response.code == '200') {
+
+                registerSalesforce(salesforceId,email,nombre,apellidos,idioma,geo_suscripcion,topic_suscripcion,frecuencia);
+                //INICIO - QUITAR SI DESCOMENTO SALESFORCE
+                /*if(typeof digitalData !== 'undefined' && typeof digitalView == "function"){
+                    var dD = jQuery.extend(true, {}, digitalData);
+                    setLevel(2, "registro");
+                    setLevel(3, "5 registro exitoso");
+                    setType("formulario");
+                    setName("formulario de registro");
+                    setFulfillmentModel("online");
+                    setStep("5 registro exitoso");
+                    setState("inicio");
+
+                    setPageName();
+
+                    digitalView("App Step 5", digitalData);
+                    digitalData = dD;
+                    delete dD;
+                }
+
+                nextSection = jQuery('form.onboard_perfil_form button.boton').data('step');
+                jQuery('.onboarding_section').each(function () {
+                    if ( jQuery(this).attr('id') == nextSection){
+                        jQuery(this).removeClass('d-none');
+                    }else{
+                        jQuery(this).addClass('d-none');
+                    }
+                });
+                jQuery('#stepIndicator').addClass('d-none');*/
+                // FIN - QUITAR SI DESCOMENTO SALESFORCE
+            } else {
+                jQuery('form.onboard_perfil_form').closest('section').prepend(getErrorMessage(translation_on_boarding.errorPlataforma));
+                sendErrorForm(salesforceId + " - " + email,"Error registrando en BBVA. Error mostrado al usuario: " + translation_on_boarding.errorPlataforma + ". Code: " + response.code,data);
+
+                if(typeof digitalData !== 'undefined' && typeof digitalView == "function"){
+                    cleanAsyncVars();
+                    setLevel(2, "registro");
+                    setLevel(3, "4 datos personales");
+                    setUserState();
+
+                    setPageName();
+
+                    digitalData.application.errorType = "no disponible"
+
+                    digitalLink("Site Error", digitalData);
+                    
+                }
+
+                scrollToTarget(0);
+                jQuery('.alert.alert-bbva').fadeIn(500/*,function(){
+                    setTimeout(function(){
+                        jQuery('.alert.alert-bbva').fadeOut(5000,function(){
+                            jQuery('.alert.alert-bbva').remove();
+                        });
+                    },10000);
+                }*/);
+                jQuery('form.onboard_perfil_form button.boton').attr('disabled',false);
+            }
+        },
+        error: function(error) {
+            if(error.status == 409 && error.responseJSON.result.code == 'CONFLICT') {
+                errorMessageForm = translation_on_boarding.errorUsuario;
+                jQuery('form.onboard_perfil_form').closest('section').prepend(getErrorMessage(translation_on_boarding.errorUsuario));
+            }  else if(error.status == 400 || error.status == 412) {
+                if(error.responseJSON.result.internal_code == 'backend_error') {
+                    jQuery('form.onboard_perfil_form').closest('section').prepend(getErrorMessage(translation_on_boarding.errorRevise));
+                    errorMessageForm = translation_on_boarding.errorRevise;
+                } else {
+                    jQuery('form.onboard_perfil_form').closest('section').prepend(getErrorMessage(translation_on_boarding.errorPass));
+                    jQuery('#datos_personales_password').parent().addClass('was-validated');
+                    jQuery('#datos_personales_confirmPassword').parent().addClass('was-validated');
+                    errorMessageForm = translation_on_boarding.errorPass;
+                }
+            } else {
+                jQuery('form.onboard_perfil_form').closest('section').prepend(getErrorMessage(translation_on_boarding.errorPlataforma));
+                errorMessageForm = translation_on_boarding.errorPlataforma;
+            }
+            sendErrorForm(salesforceId + " - " + email,"Error registrando en BBVA. Error mostrado al usuario: " + errorMessageForm + ". Código: " + error.status + " -> " + error.responseText,data);
+
+            if(typeof digitalData !== 'undefined' && typeof digitalView == "function"){
+                cleanAsyncVars();
+                setLevel(2, "registro");
+                setLevel(3, "4 datos personales");
+                setUserState();
+
+                setPageName();
+
+                digitalData.application.errorType = "no disponible"
+
+                digitalLink("Site Error", digitalData);
+                
+            }
+
+            scrollToTarget(0);
+            jQuery('.alert.alert-bbva').fadeIn(500/*,function(){
+                setTimeout(function(){
+                    jQuery('.alert.alert-bbva').fadeOut(5000,function(){
+                        jQuery('.alert.alert-bbva').remove();
+                    });
+                },10000);
+            }*/);
+            jQuery('form.onboard_perfil_form button.boton').attr('disabled',false);
+            
+			if(typeof grecaptcha !== "undefined") {
+                grecaptcha.reset();
+            }
+			
+        }
+    });
+
+}
+
+function registerSalesforce(salesforceId,email,nombre,apellidos,idioma,geo_suscripcion,topic_suscripcion,frecuencia) {
+    interests = geo_suscripcion.concat(topic_suscripcion).join();
+    if(interests != '') {
+        // Formato para SF
+        interests = ',' + interests + ',';
+    }
+
+    grecaptcha.ready(function() {
+        grecaptcha.execute('6LeZOPYZAAAAAPMTmMzzuNZDQU10r-7FuYeuHyVv', {action: 'submit'})                    
+        .then(function(token) {
+            var modDate = moment().format('YYYY-MM-DD HH:mm:ss');    
+    payload = [{
+        "keys": {
+            "SubscriberKey":salesforceId
+        },
+        "values": {
+            "Email":email,
+            "Frequency":frecuencia,
+            "Interests":interests,
+            "Language":idioma,
+            "Name":nombre,
+            "Status":"Inactivo",
+            "Surname":apellidos,
+            "ModificationDate":modDate
+        }
+    }];
+
+    numIntentos++;
+    var salesforce = '/bbva-components/v3/salesforce/' + translation_on_boarding.subsURL + 'key:' + translation_on_boarding.subsDE + '/rowset';
+    var url = host + salesforce + '?project=' + projectId + '&clientResponse=' + token;
+	jQuery.ajax({
+        url: url,
+        method: 'POST',
+        contentType: 'application/json',
+        dataType: "json",
+        data: JSON.stringify(payload),
+        success: function(response) {
+            if(typeof response !== 'undefined' && response.code == '200') {
+                if(typeof digitalData !== 'undefined' && typeof digitalView == "function"){
+                    var dD = jQuery.extend(true, {}, digitalData);
+                    setLevel(2, "registro");
+                    setLevel(3, "5 registro exitoso");
+                    setType("formulario");
+                    setName("formulario de registro");
+                    setFulfillmentModel("online");
+                    setStep("5 registro exitoso");
+                    setState("inicio");
+                    setGlobalApplication("digital activation");
+                    setUserState();
+
+                    setPageName();
+
+                    digitalView("App Step 5", digitalData);
+                    digitalData = dD;
+                    delete dD;
+                }
+
+                nextSection = jQuery('form.onboard_perfil_form button.boton').data('step');
+                jQuery('.onboarding_section').each(function () {
+                    if ( jQuery(this).attr('id') == nextSection){
+                        jQuery(this).removeClass('d-none');
+                    }else{
+                        jQuery(this).addClass('d-none');
+                    }
+                });
+                jQuery('#stepIndicator').addClass('d-none');
+
+                // Confirmo que el segundo intento ha funcionado
+                if(numIntentos > 1) {
+                    sendErrorForm(salesforceId + " - " + email,"Intento nº: " + numIntentos + ". REGISTRADO EN SALESFORCE OK",payload);
+                }
+            } else {
+                sendErrorForm(salesforceId + " - " + email,"Error insertando en SALESFORCE. Intento nº: " + numIntentos + ". Error mostrado al usuario: " + translation_on_boarding.errorPlataformaSF + ". Code: " + response.code + " -> " + response.responseText,payload);
+                //jQuery('form.onboard_perfil_form').closest('section').prepend(getErrorMessage(translation_on_boarding.errorPlataformaSF));
+
+                // Eliminar usuario creado en Webpúblicas?!
+
+                // Reintento el registro en Salesforce si da error la primera vez
+                if(numIntentos > 1) {
+                    if(typeof digitalData !== 'undefined' && typeof digitalView == "function"){
+                        cleanAsyncVars();
+                        setLevel(2, "registro");
+                        setLevel(3, "4 datos personales");
+                        setUserState();
+
+                        setPageName();
+
+                        digitalData.application.errorType = "no disponible";
+
+                        digitalLink("Site Error", digitalData);
+
+                        
+                    }
+
+                    /* moliver: muestro mensaje de ok aunque haya dado error en salesforce */
+                    /*scrollToTarget(0);
+                    jQuery('.alert.alert-bbva').fadeIn(500);
+                    jQuery('form.onboard_perfil_form button.boton').attr('disabled',false);
+                    if(typeof grecaptcha !== "undefined") {
+                        grecaptcha.reset();
+                    }*/
+                    nextSection = jQuery('form.onboard_perfil_form button.boton').data('step');
+                    jQuery('.onboarding_section').each(function () {
+                        if ( jQuery(this).attr('id') == nextSection){
+                            jQuery(this).removeClass('d-none');
+                        }else{
+                            jQuery(this).addClass('d-none');
+                        }
+                    });
+                    jQuery('#stepIndicator').addClass('d-none');
+                    /**********************************************************************/
+                } else {
+                    registerSalesforce(salesforceId,email,nombre,apellidos,idioma,geo_suscripcion,topic_suscripcion,frecuencia);
+                }
+
+                console.log(response);
+            }
+        },
+        error: function(jqXHR,textStatus,errorThrown) {
+            //jQuery('form.onboard_perfil_form').closest('section').prepend(getErrorMessage(translation_on_boarding.errorPlataformaSF));
+            sendErrorForm(salesforceId + " - " + email,"Error de comunicación con SALESFORCE. Intento nº: " + numIntentos + ". Error mostrado al usuario: " + translation_on_boarding.errorPlataformaSF + ". Status: " + jqXHR.status + " -> " + jqXHR.responseText,payload);
+            // Eliminar usuario creado en Webpúblicas?!
+
+            // Reintento el registro en Salesforce si da error la primera vez
+            if(numIntentos > 1) {
+                if(typeof digitalData !== 'undefined' && typeof digitalView == "function"){
+                    cleanAsyncVars();
+                    setLevel(2, "registro");
+                    setLevel(3, "4 datos personales");
+                    setUserState();
+
+                    setPageName();
+
+                    digitalData.application.errorType = "no disponible"
+
+                    digitalLink("Site Error", digitalData);
+                    
+                }
+
+                /*scrollToTarget(0);
+                jQuery('.alert.alert-bbva').fadeIn(500);
+                jQuery('form.onboard_perfil_form button.boton').attr('disabled',false);*/
+
+                nextSection = jQuery('form.onboard_perfil_form button.boton').data('step');
+                jQuery('.onboarding_section').each(function () {
+                    if ( jQuery(this).attr('id') == nextSection){
+                        jQuery(this).removeClass('d-none');
+                    }else{
+                        jQuery(this).addClass('d-none');
+                    }
+                });
+                jQuery('#stepIndicator').addClass('d-none');
+            } else {
+                registerSalesforce(salesforceId,email,nombre,apellidos,idioma,geo_suscripcion,topic_suscripcion,frecuencia);
+            }
+
+            console.log(jqXHR);
+            console.log(textStatus);
+            console.log(errorThrown);
+            console.log("error");
+        }
+    });
+	    }); 
+  });// fin grecaptcha.ready(function()
+}
+
+function sendErrorForm(salesforceId,incidencia,payload) {
+    var form = '/bbva-components/form';
+    var url = host + form + '?project=' + projectId;
+    var data = {
+        "id-salesforce":salesforceId,
+        "incidencia":incidencia,
+        "payload":JSON.stringify(payload),
+        "formID":'jjdx6yeh1542974855539'
+    };
+    jQuery.ajax({
+        url: url,
+        method: 'POST',
+        contentType: 'application/json',
+        dataType: "json",
+        data: JSON.stringify(data),
+        success: function(data) {
+            console.log(data);
+        },
+        error: function(error) {
+            console.log(error);
+        }
+    });
+}
+
+function checkMandatoryFieldsOnboarding() {
+
+    var nombre = jQuery('#datos_personales_name').val();
+    var apellidos = jQuery('#datos_personales_surname').val();
+    var email = jQuery('#datos_personales_email').val();
+    var password = jQuery('#datos_personales_password').val();
+    var confirmPassword = jQuery('#datos_personales_confirmPassword').val();
+
+    var idioma = 'es';
+    if(jQuery('[name=idioma]:checked').length > 0) {
+        idioma = 'en';
+    }
+
+    var condiciones_aceptadas = false;
+    if(jQuery('#acepto-condiciones:checked').length > 0) {
+        condiciones_aceptadas = true;
+    }
+
+    if(nombre == '' || apellidos == '' || email == '' || emailValidator(email) == false || password == '' || confirmPassword == '' || condiciones_aceptadas == false) {
+        return false;
+    }
+
+    return true;
+}
+
+function emailValidator(value) {
+    if (value.length > 256){
+        return false;
+    }
+    else if (value.split("@")[0].length>64){
+        return false;
+    }
+    else if (value.split("@").length>1){
+        if (value.split("@")[1].length>255){
+            return false;
+        }
+    }
+    return /^[a-zA-Z0-9\!\#\$\%\&\'\*\+\-\/\=\?\\\^\_\`\{\|\}\~](?![\w\!\#\$\%\&\'\*\+\-\/\=\?\\^\_\`\.\{\|\}\~]*(\.)\1+)[\w\!\#\$\%\&\'\*\+\-\/\=\?\\\^\_\`\.\{\|\}\~]*[a-zA-Z0-9\!\#\$\%\&\'\*\+\-\/\=\?\\\^\_\`\{\|\}\~]@(?!\_)[\w](?![\w\-\.]*(\.)\2+)((?!\_)[\w\-\.])*(?!\_)[\w][\.][a-zA-Z0-9]{2,}$/.test(value);
+};
+
+function goToHomepage() {
+    var getUrl = window.location;
+    var homeUrl = getUrl .protocol + "//" + getUrl.host + "/";
+    var partesUrl =  getUrl.pathname.split('/');
+
+    if(typeof partesUrl[1] != 'undefined' && partesUrl[1] == 'en') {
+        homeUrl += partesUrl[1] + '/';
+    }
+
+    window.location.href = homeUrl;
+}
+
+// Recaptcha
+if (document.getElementById('recaptcha') !== null) {
+    var lang_recaptcha = (jQuery('html').attr('lang') !== 'es') ? 'en' : 'es';
+    var onloadCallback = function() {
+	grecaptcha.ready(() => {
+        if(jQuery('#recaptcha').children().length == 0) {
+            var recaptcha = grecaptcha.render('recaptcha', {
+              'sitekey': '6LeRuW4UAAAAAJgHHHEd79tQKGnkXXbHX0JHs6JU',
+              'theme': 'light',
+              'hl': lang_recaptcha,
+              'callback': validateRecaptcha
+            });
+        }
+    });
+	}
+}
+
+// Validar si el recaptcha no es vacío
+function validateRecaptcha() {
+    var response = '';
+    if(typeof grecaptcha != 'undefined')
+        response = grecaptcha.getResponse();
+
+    isValidRecaptcha = (response.length > 0);
+
+    if(isValidRecaptcha && checkMandatoryFieldsOnboarding()) {
+        jQuery('form.onboard_perfil_form button.boton').attr('disabled',false);
+    } else {
+        jQuery('form.onboard_perfil_form button.boton').attr('disabled',true);
+    }
+
+    return isValidRecaptcha;
+}
+
+function getErrorMessage(message) {
+    m = '';
+    if(typeof message == 'object') {
+        for(var j=0; j < message.length; j++) {
+            m += '<li>' + message[j] + '</li>';
+        }
+    } else {
+        m = '<li> ' + message + '</li>';
+    }
+
+    return '<div class="alert alert-bbva alert-dismissible fade show" role="alert" style="display:none;">'+
+            '    <strong><span class="icon-commu_alert"></span> ' + translation_on_boarding.alerta + '</strong>'+
+            '    <hr></hr>'+
+            '    <ul>'+
+            '        ' + m +
+            '    </ul>'+
+            '    <button type="button" class="close" data-dismiss="alert" aria-label="Close">'+
+            '        <span aria-hidden="true">&times;</span>'+
+            '    </button>'+
+            '</div>';
+}
+
+function scrollToTarget(target) {
+    var top = 0;
+    if(target !== 0) {
+        top = target.offset().top;
+    }
+    jQuery('html, body').animate({ scrollTop: top });
+}
